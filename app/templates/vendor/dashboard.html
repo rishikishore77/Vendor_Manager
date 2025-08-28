@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Vendor Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-tachometer-alt"></i> Vendor Dashboard</h2>
+            <p class="text-muted">Welcome, {{ session.name }}!</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Today's Status -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-clock"></i> Today's Status ({{ today }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if today_attendance %}
+                        <div class="alert alert-{{ 'success' if today_attendance.approval_status == 'Approved' else 'warning' if today_attendance.approval_status == 'Pending' else 'danger' }}">
+                            <strong>Status:</strong> {{ today_attendance.status }}<br>
+                            <strong>Approval:</strong> {{ today_attendance.approval_status }}
+                            {% if today_attendance.rejection_reason %}
+                                <br><strong>Reason:</strong> {{ today_attendance.rejection_reason }}
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        {% if is_today_working %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> No attendance marked for today
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Today is a holiday/weekend
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if is_today_working %}
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#attendanceModal">
+                        <i class="fas fa-check"></i> Mark Attendance
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Summary -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-chart-pie"></i> This Month Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-success">{{ monthly_summary.present or 0 }}</h4>
+                            <small>Present</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info">{{ monthly_summary.wfh or 0 }}</h4>
+                            <small>WFH</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning">{{ monthly_summary.leave or 0 }}</h4>
+                            <small>Leave</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h5 class="text-success">{{ monthly_summary.approved or 0 }}</h5>
+                            <small>Approved</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-warning">{{ monthly_summary.pending or 0 }}</h5>
+                            <small>Pending</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-danger">{{ monthly_summary.rejected or 0 }}</h5>
+                            <small>Rejected</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('vendor.calendar_view') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-calendar"></i><br>View Calendar
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#futureLeaveModal">
+                                <i class="fas fa-plane"></i><br>Mark Future Leave
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('vendor.history') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-history"></i><br>View History
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-outline-warning w-100 mb-2">
+                                <i class="fas fa-exclamation-triangle"></i><br>Mismatches
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Attendance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="date" value="{{ today }}">
+
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select" required>
+                            <option value="">Select Status</option>
+                            <option value="In office full day">In office full day</option>
+                            <option value="Office half + work from home half">Office half + work from home half</option>
+                            <option value="Office half + leave half">Office half + leave half</option>
+                            <option value="Work from home full">Work from home full</option>
+                            <option value="Leave">Leave</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Comments</label>
+                        <textarea name="comments" class="form-control" rows="3" placeholder="Optional comments..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Mark Attendance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Future Leave Modal -->
+<div class="modal fade" id="futureLeaveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Future Leave</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="date" class="form-control" required min="{{ today }}">
+                    </div>
+
+                    <input type="hidden" name="status" value="Leave">
+
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <textarea name="comments" class="form-control" rows="3" placeholder="Reason for leave..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Mark Leave</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

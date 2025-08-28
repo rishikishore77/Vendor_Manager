@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Mismatches{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-exclamation-triangle"></i> Data Mismatches</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-exclamation-triangle"></i> Pending Mismatches</h5>
+            </div>
+            <div class="card-body">
+                {% if mismatches_by_date %}
+                    {% for date, mismatches in mismatches_by_date.items() %}
+                    <div class="mb-3">
+                        <h6>{{ date }}</h6>
+                        {% for mismatch in mismatches %}
+                        <div class="alert alert-warning">
+                            <strong>Issue:</strong> {{ mismatch.message }}<br>
+                            <strong>Expected:</strong> {{ mismatch.expected }}<br>
+                            <strong>Actual:</strong> {{ mismatch.actual }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> No mismatches found. Great job!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

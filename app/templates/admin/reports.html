@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Admin Reports{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-chart-bar"></i> System Reports</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-table"></i> Attendance Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if summary_stats %}
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h4>{{ summary_stats.total_records or 0 }}</h4>
+                                <p>Total Records</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h4>{{ "%.1f"|format(summary_stats.approval_rate or 0) }}%</h4>
+                                <p>Approval Rate</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h4>{{ summary_stats.total_billable_days or 0 }}</h4>
+                                <p>Billable Days</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No report data available. Upload attendance data to generate reports.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

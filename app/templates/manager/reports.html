@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Manager Reports{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-chart-bar"></i> Team Reports</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Team Performance Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if report_data %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Total Days</th>
+                                    <th>Approved</th>
+                                    <th>Pending</th>
+                                    <th>Billable Days</th>
+                                    <th>Approval Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in report_data %}
+                                <tr>
+                                    <td>{{ data.member.name }}</td>
+                                    <td>{{ data.total_days }}</td>
+                                    <td>{{ data.approved_days }}</td>
+                                    <td>{{ data.pending_days }}</td>
+                                    <td>{{ data.billable_days }}</td>
+                                    <td>{{ "%.1f"|format(data.approval_rate) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No report data available.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

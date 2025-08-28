@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Team Mismatches{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-clipboard-check"></i> Team Mismatches</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-exclamation-triangle"></i> Team Data Mismatches</h5>
+            </div>
+            <div class="card-body">
+                {% if team_mismatches %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Date</th>
+                                    <th>Issue</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mismatch in team_mismatches %}
+                                <tr>
+                                    <td>{{ mismatch.user_info.name if mismatch.user_info else 'N/A' }}</td>
+                                    <td>{{ mismatch.date }}</td>
+                                    <td>{{ mismatch.message }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ mismatch.status }}</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">Review</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> No mismatches found for your team.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

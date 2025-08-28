@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Manager Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-users"></i> Manager Dashboard</h2>
+            <p class="text-muted">Welcome, {{ session.name }}!</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pending Approvals -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-clock"></i> Pending Approvals ({{ total_pending or 0 }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_approvals %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Comments</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attendance in pending_approvals %}
+                                    <tr>
+                                        <td>{{ attendance.user_info.name if attendance.user_info else 'N/A' }}</td>
+                                        <td>{{ attendance.date }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ attendance.status }}</span>
+                                        </td>
+                                        <td>{{ attendance.comments or '-' }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('manager.approve_attendance') }}" class="d-inline">
+                                                <input type="hidden" name="attendance_id" value="{{ attendance._id }}">
+                                                <input type="hidden" name="action" value="approve">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal{{ loop.index }}">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+
+                                            <!-- Reject Modal -->
+                                            <div class="modal fade" id="rejectModal{{ loop.index }}" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Reject Attendance</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <form method="POST" action="{{ url_for('manager.approve_attendance') }}">
+                                                            <div class="modal-body">
+                                                                <input type="hidden" name="attendance_id" value="{{ attendance._id }}">
+                                                                <input type="hidden" name="action" value="reject">
+
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Rejection Reason</label>
+                                                                    <textarea name="rejection_reason" class="form-control" rows="3" required placeholder="Please provide reason for rejection..."></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-danger">Reject</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No pending approvals at this time.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Overview -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-users"></i> Team Overview</h5>
+                </div>
+                <div class="card-body">
+                    <h4 class="text-center">{{ team_members|length or 0 }}</h4>
+                    <p class="text-center text-muted">Team Members</p>
+
+                    {% if team_members %}
+                    <ul class="list-group list-group-flush">
+                        {% for member in team_members[:5] %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ member.name }}</span>
+                            <span class="badge bg-secondary">{{ member.vendor_company or 'N/A' }}</span>
+                        </li>
+                        {% endfor %}
+                        {% if team_members|length > 5 %}
+                        <li class="list-group-item text-center">
+                            <small class="text-muted">... and {{ team_members|length - 5 }} more</small>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
