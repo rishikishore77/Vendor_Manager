@@ -1,0 +1,148 @@
+Our company needs a vendor management system. Vendors are employees hired from different vending company. I need to create a website for this. There needs to be vendor, manager and admin users to login.
+The company can have many sites.
+Every site have an admin.
+A site have many managers managing many vendors.
+The vendor view should be as follows:
+-> Login
+-> Reset password option
+-> Show current day's status , pending if not updated, under review if manager have not approved.
+-> mark attendance (In office full day, Office half + work from home half, office half + leave half, work from home full).
+-> Mark attendance only on working days (Holidays and weekends automarked as holiday, admin needs to update holiday for the year).
+-> If manager rejects, it should show rejection reason (manager update the reason), employee update again.
+-> View History (Calendar view) Shows the status of each day (office full day, Office half + work from home half, office half + leave half, work from home full, holiday).
+-> Show current month and current year leave and Work From Home applied numbers.
+-> Once admin update the work from home data, time off data and Attendance swipe data of the month (after every month), vendor needs to get mismatch table if the status entered by vendor conflicts with attendance / work from home data.
+ - If vendor enter in office full day, then attendance swipe data should be present for more than 4 hrs.
+ - If vendor enter in Office half + work from home half, then attendance swipe data should be present and work from home entry should be present (no need to check hours).
+ - If vendor enter in office half + leave half, then attendance swipe data should be present and leave data should be present in time off data.
+ - If vendor enter work from home full, then work from home entry should be present.
+ - If vendor enters leave full day, entry should be present in time off data.
+-> Vendor can update reason for mismatch in the table. Manager sees the table, can view reason and make final decision.
+-> Only manager mark final status of mismatch entry after reading the mismatch reason.
+-> Vendor can mark the current day status as well as future day's full day leave. (Only allow future full day leave have option to update advance)
+The Manager view will be as follows:
+-> Login
+-> Reset password
+-> View the data of managed teams seperately. (Manager can manage multiple teams).
+-> Manager of the vendor approves his daily status.
+-> Manager needs to see the status to be approved.
+-> Manager rejects, need to give rejection reason. It will go back to pending state for employee to update again.
+-> Manager have the control to update the data vendor in his team. (Manager can modify the data).
+-> Manager needs to see pending update status of vendors.
+-> Manager needs to see previous audit history by admin,
+-> Manager needs to get mismatch table.
+-> Manager can see if vendor update the mismatch reason or is pending to be updated by vendor.
+-> Manager can update final status in case of conflict also after reading the comments. (Should be able to update even if no comments from Vendor).
+-> Manager needs to see update of all vendors under him in any date. (Give a filter option based on his teams, name, work days, vendor company, date range etc).
+->After every month, manager needs to make sure all the mismatches are resolved. Then mark as ready for audit for admin.
+-> After this indication, admin can audit for those employees for that month.
+The admin view is as follows:
+-> Login
+-> Each site have an admin.
+-> Admin can add manager, vendor, manager vendor mapping.
+-> Admin adds master data of employee like vending company etc
+-> Admin can remove manager, vendor when they leave. (But their history needs to be there in database, maybe in database, can mark it as not active member)
+-> Admin should be able to see all data of the vendors in his site. Admin needs a filter to view data based on vending company,  leave data, working hours, date range, manager, team etc.
+-> Admin needs to export data for billing purpose of vendors.
+-> This data is exported at start of a month for previous month.
+-> At this time, audit ready may not be indicated by manager as employee may not have updated all or there may be mismatch.
+-> In such case, consider the status not entered fields as absent (leave), mismatch fields use data entered by employee.
+-> Once audit ready, the data will be proper.
+-> Now if export for billing happenned before audit, compare that with audit ready data and calculate the work days difference.
+-> This difference should be offseted in next month billing export.
+-> So any month billing export shows the number of work days (can be before audit ready) + offset correction of previous month to show final work days.
+-> Admin uploads work from home data, time off data and attendance swipe data at start of a month for the previous month.
+-> This needs to be uploaded as exel with a specified format.
+-> Admin have provision to set holidays for the year. (Mark in calendar or need a way to upload the data at an instance from a file)
+-> Allow admin to export data only if holiday updated for that year.
+-> If attendance swipe data atimeoff data, work from home data not available, use the data entered by vendor plus the available data (attencance/ wfh data) for mismatch calculation. Use data entered by vendor only and no mismatch if there is no attencance/ wfh data to upload. Some sites may not have attendance swipe data / wfh data. So take the data entered in website only.
+Time off data is like this if present
+OT ID	Personnel Number	Start Date	End Date	Attendance or Absence Type	Start Time	End Time	Hrs	Record is for full day	Days	Cal.days	Payroll hrs
+OT0001	93810	03/21/2024	03/21/2024	Maternity Leave (ML)	1:00 PM	7:00 PM	8	Yes	1	1	8
+OT0001	93810	10/27/2024	10/27/2024	Paternity Leave	9:00 AM	11:00 AM	2	No	0.5	2	4
+OT0001	93810	01/22/2025	01/22/2025	Earned Leave (EL)	9:00 AM	1:00 PM	4	No	0.5	1	4
+OT0001	93810	07/19/2025	07/19/2025	Maternity Leave (ML)	1:00 PM	7:00 PM	8	Yes	1	2	8
+OT0002	24592	04/13/2024	04/13/2024	Sick Leave (SL)	1:00 PM	7:00 PM	8	Yes	1	2	8
+OT0002	24592	08/26/2024	08/26/2024	Casual Leave (CL)	3:00 PM	7:00 PM	4	No	0.5	2	4
+OT0002	24592	10/11/2024	10/11/2024	Casual Leave (CL)	1:00 PM	7:00 PM	8	Yes	1	3	8
+OT0002	24592	01/24/2025	01/24/2025	Bereavement Leave	9:00 AM	1:00 PM	4	No	0.5	3	4
+OT0003	13278	06/16/2024	06/16/2024	Sick Leave (SL)	11:00 AM	3:00 PM	4	No	0.5	2	4
+OT0003	13278	06/24/2024	06/25/2024	Bereavement Leave	9:00 AM	7:00 PM	16	Yes	2	3	16
+OT0003	13278	09/07/2024	09/07/2024	Bereavement Leave	1:00 PM	7:00 PM	8	Yes	1	2	8
+OT0003	13278	06/30/2025	07/09/2025	Casual Leave (CL)	9:00 AM	7:00 PM	80	Yes	10	11	80
+OT0004	46048	03/08/2024	03/12/2024	Casual Leave (CL)	9:00 AM	7:00 PM	40	Yes	5	5	40
+
+Work from home data is as follows if present:
+Name	Department	Start Date	End Date	Duration
+Christopher Taylor	BU1_BU1/D1	2025-07-01	2025-07-03	3
+Brandon Jones	BU1_BU1/D1	2025-07-01	2025-07-02	2
+James Nguyen	BU1_BU1/D1	2025-07-01	2025-07-02	2
+Mark Anderson	BU1_BU1/D1	2025-07-01	2025-07-01	1
+Justin Rivera	BU1_BU1/D1	2025-07-01	2025-07-03	3
+Jack Robinson	BU1_BU1/D1	2025-07-01	2025-07-03	3
+Donald Rodriguez	BU1_BU1/D1	2025-07-01	2025-07-02	2
+Alexander Anderson	BU1_BU1/D1	2025-07-01	2025-07-01	1
+Jerry Brown	BU1_BU1/D1	2025-07-02	2025-07-03	2
+Donald Rodriguez	BU1_BU1/D1	2025-07-03	2025-07-04	2
+Raymond Jones	BU1_BU1/D1	2025-07-03	2025-07-03	1
+Anthony Rivera	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Michael Johnson	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Aaron Baker	BU1_BU1/D1	2025-07-04	2025-07-05	2
+Dennis Moore	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Justin Rivera	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Andrew Jones	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Brandon Taylor	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Edward Thompson	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Timothy Adams	BU1_BU1/D1	2025-07-04	2025-07-04	1
+Ronald Moore	BU1_BU1/D1	2025-07-07	2025-07-08	2
+Raymond Jones	BU1_BU1/D1	2025-07-07	2025-07-08	2
+James Anderson	BU1_BU1/D1	2025-07-07	2025-07-07	1
+Jerry Brown	BU1_BU1/D1	2025-07-07	2025-07-09	3
+Christopher Taylor	BU1_BU1/D1	2025-07-08	2025-07-08	1
+Scott Moore	BU1_BU1/D1	2025-07-08	2025-07-08	1
+Jeffrey Nguyen	BU1_BU1/D1	2025-07-08	2025-07-10	3
+Edward Torres	BU1_BU1/D1	2025-07-08	2025-07-09	2
+Andrew Jones	BU1_BU1/D1	2025-07-08	2025-07-10	3
+Daniel Robinson	BU1_BU1/D1	2025-07-08	2025-07-10	3
+Christopher Green	BU1_BU1/D1	2025-07-08	2025-07-09	2
+Larry Jackson	BU1_BU1/D1	2025-07-09	2025-07-11	3
+Richard Harris	BU1_BU1/D1	2025-07-09	2025-07-09	1
+William Garcia	BU1_BU1/D1	2025-07-09	2025-07-11	3
+Ronald Moore	BU1_BU1/D1	2025-07-09	2025-07-11	3
+Donald Baker	BU1_BU1/D1	2025-07-09	2025-07-09	1
+Brandon Johnson	BU1_BU1/D1	2025-07-09	2025-07-11	3
+Michael Johnson	BU1_BU1/D1	2025-07-11	2025-07-11	1
+Justin Rivera	BU1_BU1/D1	2025-07-11	2025-07-11	1
+Christopher Green	BU1_BU1/D1	2025-07-14	2025-07-15	2
+Patrick Mitchell	BU1_BU1/D1	2025-07-14	2025-07-14	1
+Edward Thompson	BU1_BU1/D1	2025-07-15	2025-07-17	3
+William Garcia	BU1_BU1/D1	2025-07-15	2025-07-16	2
+
+Attendance swipe is as follows:
+Sr No	Employee Code	Employee Name	Attendance Date	Weekday	Shift Code	Login	Logout	Extra Work Hours	Total Working Hours	Attendance Status	Floor	Business Unit	Department	Subdepartment
+1	OT0001	Samuel Davis	01/07/25	Tuesday	G	09:43:00	18:43:00	00:12:00	08:30:00	PP	5	BU1	BU1/D1	M1
+2	OT0002	Dennis Moore	01/07/25	Tuesday	G	10:24:00	13:46:00	00:00:00	03:22:00	PA	5	BU1	BU1/D1	M4
+3	OT0003	Donald Rodriguez	01/07/25	Tuesday	G	09:29:00	18:46:00	00:15:00	08:46:00	PP	5	BU1	BU1/D1	M2
+4	OT0004	Patrick Mitchell	01/07/25	Tuesday	G	10:16:00	12:53:00	00:00:00	02:37:00	PA	5	BU1	BU1/D1	M9
+5	OT0005	James Nguyen	01/07/25	Tuesday	G	10:26:00	12:47:00	00:00:00	02:21:00	PA	5	BU1	BU1/D1	M7
+6	OT0006	Michael Johnson	01/07/25	Tuesday	G	09:34:00	18:38:00	00:07:00	08:33:00	PP	5	BU1	BU1/D1	M2
+7	OT0007	Mark Anderson	01/07/25	Tuesday	G	09:07:00	19:26:00	00:56:00	09:48:00	PP	5	BU1	BU1/D1	M9
+8	OT0008	Brandon Johnson	01/07/25	Tuesday	G	09:03:00	18:56:00	00:26:00	09:22:00	PP	5	BU1	BU1/D1	M9
+9	OT0009	Anthony Rivera	01/07/25	Tuesday	G	09:05:00	19:02:00	00:32:00	09:26:00	PP	5	BU1	BU1/D1	M9
+10	OT0010	Jason Anderson	01/07/25	Tuesday	G	13:04:00	19:35:00	01:04:00	05:30:00	AP	5	BU1	BU1/D1	M8
+11	OT0011	Scott Moore	01/07/25	Tuesday	G	10:13:00	18:45:00	00:15:00	08:01:00	PP	5	BU1	BU1/D1	M1
+12	OT0012	Jerry Hernandez	01/07/25	Tuesday	G	10:28:00	19:07:00	00:37:00	08:09:00	PP	5	BU1	BU1/D1	M7
+13	OT0013	Brian Moore	01/07/25	Tuesday	G	09:21:00	18:37:00	00:07:00	08:46:00	PP	5	BU1	BU1/D1	M3
+14	OT0014	Mark Carter	01/07/25	Tuesday	G	09:00:00	18:45:00	00:15:00	09:15:00	PP	5	BU1	BU1/D1	M6
+
+
+I want to use mongo db for the database.
+Frontend should be attractive and classy.
+Python backend is needed.
+We need to deploy it in a server.
+The server will run backend  and database.
+Users in same VPN connects to server where hosted.
+For devolepment, i need to run everything in my PC only, I will move to server after my modifications.
+Please generate optimal code for this, which runs without error, no circular imports.
+Give complete code in Zip so that I can extract and run it in my PC and later move to server
+
