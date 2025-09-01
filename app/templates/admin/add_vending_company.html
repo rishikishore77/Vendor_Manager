@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Add Vending Company{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add New Vending Company</h2>
+    <form method="POST" action="{{ url_for('admin.add_vending_company') }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">Company Name</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="Enter company name" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Vending Company</button>
+        <a href="{{ url_for('admin.add_user') }}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+</div>
+{% endblock %}

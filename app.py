@@ -38,7 +38,7 @@ def create_app(config_name='development'):
     from app.utils.database import Database
     try:
         Database.initialize(app.config['MONGO_URI'])
-        logger.info("Database initialized successfully")
+        logger.info(f"Database initialized successfully: {app.config['MONGO_URI']}")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise
@@ -53,6 +53,12 @@ def create_app(config_name='development'):
     app.register_blueprint(vendor_bp, url_prefix='/vendor')
     app.register_blueprint(manager_bp, url_prefix='/manager')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+
+    # Register Jinja2 filters for lookup by ID
+    from app.utils.jinja_filters import lookup_name_by_id, lookup_department_by_id, find_by_str_id
+    app.jinja_env.filters['lookup_name'] = lookup_name_by_id
+    app.jinja_env.filters['lookup_department'] = lookup_department_by_id
+    app.jinja_env.filters['find_by_str_id'] = find_by_str_id
 
     @app.route('/')
     def index():

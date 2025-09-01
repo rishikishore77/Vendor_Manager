@@ -3,7 +3,7 @@
 {% block title %}User Management{% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="row mb-3">
     <div class="col-12 d-flex justify-content-between align-items-center">
         <h2><i class="fas fa-users-cog"></i> User Management</h2>
         <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
@@ -12,8 +12,57 @@
     </div>
 </div>
 
+<!-- Filter Form -->
+<form method="GET" class="row g-2 mb-4">
+    <div class="col-md-2">
+        <input type="text" name="name" value="{{ filters.name }}" class="form-control" placeholder="Name">
+    </div>
+    <div class="col-md-2">
+        <select name="manager_id" class="form-select">
+            <option value="">Manager</option>
+            {% for manager in all_managers %}
+            <option value="{{ manager._id }}" {% if filters.manager_id == manager._id %}selected{% endif %}>{{ manager.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="vendor_company_id" class="form-select">
+            <option value="">Vendor Company</option>
+            {% for company in vendor_companies %}
+            <option value="{{ company._id }}" {% if filters.vendor_company_id == company._id %}selected{% endif %}>{{ company.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="department_id" class="form-select">
+            <option value="">Department</option>
+            {% for dept in departments %}
+            <option value="{{ dept._id }}" {% if filters.department_id == dept._id %}selected{% endif %}>{{ dept.name }}/{{ dept.subdepartment }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-1">
+        <select name="role" class="form-select">
+            <option value="">Role</option>
+            <option value="vendor" {% if filters.role == 'vendor' %}selected{% endif %}>Vendor</option>
+            <option value="manager" {% if filters.role == 'manager' %}selected{% endif %}>Manager</option>
+            <option value="admin" {% if filters.role == 'admin' %}selected{% endif %}>Admin</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <select name="status" class="form-select">
+            <option value="">Status</option>
+            <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+</form>
+
 <!-- Vendors -->
-<div class="row mt-3">
+<div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header bg-primary text-white">
@@ -21,8 +70,8 @@
             </div>
             <div class="card-body">
                 {% if vendors %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-striped align-middle">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -30,6 +79,7 @@
                                 <th>Company</th>
                                 <th>Employee Code</th>
                                 <th>Department</th>
+                                <th>Manager</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -39,26 +89,26 @@
                             <tr>
                                 <td>{{ vendor.name }}</td>
                                 <td>{{ vendor.username }}</td>
-                                <td>{{ vendor.vendor_company or 'N/A' }}</td>
+                                <td>
+                                  {% set company = vendor_companies | find_by_str_id(vendor.vendor_company_id) %}
+                                  {{ company.name if company else 'N/A' }}
+                                </td>
                                 <td>{{ vendor.employee_code or 'N/A' }}</td>
-                                <td>{{ vendor.department or 'N/A' }}</td>
+                                <td>
+                                  {% set dept = departments | find_by_str_id(vendor.department_id) %}
+                                  {{ (dept.name ~ '/' ~ dept.subdepartment) if dept else 'N/A' }}
+                                </td>
+                                <td>{{ vendor.manager_name or 'N/A' }}</td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if vendor.active else 'danger' }}">
                                         {{ 'Active' if vendor.active else 'Inactive' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- Edit Button -->
-                                    <a href="{{ url_for('admin.edit_user', user_id=vendor._id) }}" class="btn btn-sm btn-outline-primary">
-                                        Edit
-                                    </a>
-                                    <!-- Deactivate Button -->
+                                    <a href="{{ url_for('admin.edit_user', user_id=vendor._id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <form method="POST" action="{{ url_for('admin.deactivate_user') }}" style="display:inline;">
                                         <input type="hidden" name="user_id" value="{{ vendor._id }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                            onclick="return confirm('Are you sure you want to deactivate this user?');">
-                                            Deactivate
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to deactivate this user?');">Deactivate</button>
                                     </form>
                                 </td>
                             </tr>
@@ -75,7 +125,7 @@
 </div>
 
 <!-- Managers -->
-<div class="row mt-3">
+<div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header bg-success text-white">
@@ -83,13 +133,14 @@
             </div>
             <div class="card-body">
                 {% if managers %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-striped align-middle">
                         <thead>
                             <tr>
                                 <th>Name</th>
                                 <th>Username</th>
                                 <th>Department</th>
+                                <th>Vendors Under Manager</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -99,24 +150,21 @@
                             <tr>
                                 <td>{{ manager.name }}</td>
                                 <td>{{ manager.username }}</td>
-                                <td>{{ manager.department or 'N/A' }}</td>
+                                <td>
+                                  {% set dept = departments | find_by_str_id(manager.department_id) %}
+                                  {{ (dept.name ~ '/' ~ dept.subdepartment) if dept else manager.department or 'N/A' }}
+                                </td>
+                                <td>{{ manager.vendor_count or 0 }}</td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if manager.active else 'danger' }}">
                                         {{ 'Active' if manager.active else 'Inactive' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- Edit Button -->
-                                    <a href="{{ url_for('admin.edit_user', user_id=manager._id) }}" class="btn btn-sm btn-outline-primary">
-                                        Edit
-                                    </a>
-                                    <!-- Deactivate Button -->
+                                    <a href="{{ url_for('admin.edit_user', user_id=manager._id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <form method="POST" action="{{ url_for('admin.deactivate_user') }}" style="display:inline;">
                                         <input type="hidden" name="user_id" value="{{ manager._id }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                            onclick="return confirm('Are you sure you want to deactivate this user?');">
-                                            Deactivate
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to deactivate this user?');">Deactivate</button>
                                     </form>
                                 </td>
                             </tr>
@@ -133,7 +181,7 @@
 </div>
 
 <!-- Administrators -->
-<div class="row mt-3">
+<div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header bg-info text-white">
@@ -141,8 +189,8 @@
             </div>
             <div class="card-body">
                 {% if admins %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-striped align-middle">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -162,17 +210,10 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- Edit Button -->
-                                    <a href="{{ url_for('admin.edit_user', user_id=admin._id) }}" class="btn btn-sm btn-outline-primary">
-                                        Edit
-                                    </a>
-                                    <!-- Deactivate Button -->
+                                    <a href="{{ url_for('admin.edit_user', user_id=admin._id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <form method="POST" action="{{ url_for('admin.deactivate_user') }}" style="display:inline;">
                                         <input type="hidden" name="user_id" value="{{ admin._id }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                            onclick="return confirm('Are you sure you want to deactivate this user?');">
-                                            Deactivate
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to deactivate this user?');">Deactivate</button>
                                     </form>
                                 </td>
                             </tr>
@@ -187,4 +228,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %}

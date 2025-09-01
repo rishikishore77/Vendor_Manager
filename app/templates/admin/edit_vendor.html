@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Vendor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4>Edit Vendor: {{ user.name }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name *</label>
+                        <input type="text" id="name" name="name" class="form-control" value="{{ user.name }}" required>
+                        <div class="invalid-feedback">Please provide a full name.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="employee_code" class="form-label">Employee Code</label>
+                        <input type="text" id="employee_code" name="employee_code" class="form-control" value="{{ user.employee_code }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="department_id" class="form-label">Department *</label>
+                        <select id="department_id" name="department_id" class="form-select" required>
+                            {% for dept in departments %}
+                            <option value="{{ dept._id }}" {% if dept._id == user.department_id %}selected{% endif %}>{{ dept.name }}/{{ dept.subdepartment }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Please select a department.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="vendor_company_id" class="form-label">Vending Company *</label>
+                        <select id="vendor_company_id" name="vendor_company_id" class="form-select" required>
+                            {% for company in companies %}
+                            <option value="{{ company._id }}" {% if company._id == user.vendor_company_id %}selected{% endif %}>{{ company.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Please select a vending company.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="manager_id" class="form-label">Assign Manager</label>
+                        <select id="manager_id" name="manager_id" class="form-select">
+                            <option value="">Select Manager</option>
+                            {% for manager in managers %}
+                            <option value="{{ manager._id }}" {% if manager._id == user.manager_id %}selected{% endif %}>{{ manager.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Vendor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+{% endblock %}

@@ -115,6 +115,18 @@
                                 <i class="fas fa-clipboard-list"></i><br>Audit Management
                             </a>
                         </div>
+
+                        <!-- Added buttons for managing vending companies & departments -->
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.add_vending_company') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-building"></i><br>Manage Vending Companies
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.add_department') }}" class="btn btn-outline-success w-100 mb-2">
+                                <i class="fas fa-sitemap"></i><br>Manage Departments
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

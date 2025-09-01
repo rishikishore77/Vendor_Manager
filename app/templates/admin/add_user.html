@@ -53,8 +53,13 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="vendor_company" class="form-label">Vendor Company</label>
-                                    <input type="text" class="form-control" id="vendor_company" name="vendor_company">
+                                    <label for="vendor_company_id" class="form-label">Vendor Company</label>
+                                    <select class="form-select" id="vendor_company_id" name="vendor_company_id">
+                                        <option value="">Select Vendor Company</option>
+                                        {% for company in vendor_companies %}
+                                        <option value="{{ company._id }}">{{ company.name }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -74,13 +79,35 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="employee_code" class="form-label">Employee Code</label>
-                                    <input type="text" class="form-control" id="employee_code" name="employee_code">
+                                    <input type="text" class="form-control" id="employee_code" name="employee_code" >
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="department" class="form-label">Department</label>
-                                    <input type="text" class="form-control" id="department" name="department">
+                                    <label for="department_id" class="form-label">Department</label>
+                                    <select class="form-select" id="department_id" name="department_id">
+                                        <option value="">Select Department</option>
+                                        {% for dept in departments %}
+                                        <option value="{{ dept._id }}">{{ dept.name }}/{{ dept.subdepartment }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manager-specific fields -->
+                    <div class="manager-only" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="department_id_manager" class="form-label">Department</label>
+                                    <select class="form-select" id="department_id_manager" name="department_id">
+                                        <option value="">Select Department</option>
+                                        {% for dept in departments %}
+                                        <option value="{{ dept._id }}">{{ dept.name }}/{{ dept.subdepartment }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -103,13 +130,19 @@
 
 {% block extra_js %}
 <script>
-// Show/hide vendor fields based on role selection
+// Show/hide vendor or manager fields based on role selection
 document.getElementById('role').addEventListener('change', function() {
     const vendorFields = document.querySelector('.vendor-only');
+    const managerFields = document.querySelector('.manager-only');
     if (this.value === 'vendor') {
         vendorFields.style.display = 'block';
+        managerFields.style.display = 'none';
+    } else if (this.value === 'manager') {
+        vendorFields.style.display = 'none';
+        managerFields.style.display = 'block';
     } else {
         vendorFields.style.display = 'none';
+        managerFields.style.display = 'none';
     }
 });
 

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Departments{% endblock %}
+
+{% block content %}
+<h2>Manage Departments</h2>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="post" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="name" placeholder="Department Name" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="subdepartment" placeholder="Subdepartment" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <select name="manager_id" class="form-select">
+                    <option value="">Assign Manager (optional)</option>
+                    {% for manager in managers %}
+                    <option value="{{ manager._id }}">{{ manager.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Department</th>
+                    <th>Subdepartment</th>
+                    <th>Current Manager</th>
+                    <th>Change Manager</th>
+                    <th>Manager History</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dept in departments %}
+                <tr>
+                    <td>{{ dept.name }}</td>
+                    <td>{{ dept.subdepartment }}</td>
+                    <td>
+                        {% set mgr = managers | selectattr('_id', 'equalto', dept.current_manager_id) | first %}
+                        {{ mgr.name if mgr else 'None' }}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin.change_department_manager', dept_id=dept._id) }}" class="d-flex gap-2">
+                            <select name="manager_id" class="form-select form-select-sm" required>
+                                {% for manager in managers %}
+                                <option value="{{ manager._id }}" {% if manager._id == dept.current_manager_id %}selected{% endif %}>{{ manager.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-sm btn-warning" type="submit">Change</button>
+                        </form>
+                    </td>
+                    <td>
+                        <ul class="list-unstyled small mb-0">
+                            {% for hist in dept.manager_history %}
+                            {% set hist_mgr = managers | selectattr('_id', 'equalto', hist.manager_id) | first %}
+                            <li>
+                                {{ hist_mgr.name if hist_mgr else 'Unknown Manager' }}
+                                from {{ hist.from.strftime('%Y-%m-%d') }}
+                                to {{ hist.to.strftime('%Y-%m-%d') if hist.to else 'Present' }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

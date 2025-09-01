@@ -75,13 +75,31 @@ body {
     background-color: #f8f9fa;
 }
 
+/* Highlight for today */
 .calendar-day.today {
     background-color: #e3f2fd;
     border-color: #2196f3;
 }
 
-.calendar-day.has-attendance {
-    background-color: #e8f5e8;
+/* Highlight for weekends */
+.calendar-day.weekend {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+/* Highlight for custom holidays */
+.calendar-day.holiday {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+    font-weight: 600;
+}
+
+/* Style for holiday name inside calendar cell */
+.calendar-day .holiday-name {
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 4px;
 }
 
 /* Dashboard stats cards */

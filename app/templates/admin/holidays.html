@@ -1,24 +1,99 @@
 {% extends "base.html" %}
-{% block title %}Holiday Management{% endblock %}
+{% block title %}Manage Holidays{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h2><i class="fas fa-calendar-check"></i> Holiday Management</h2>
-    </div>
-</div>
+<div class="container">
+    <h3>Manage Holidays for {{ selected_year }}</h3>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5><i class="fas fa-calendar-plus"></i> Manage Holidays</h5>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Holiday management functionality will be implemented in a future update.
-                </div>
-            </div>
+    <!-- Year selector -->
+    <form method="GET" class="mb-3 row g-3">
+        <div class="col-md-3">
+            <select class="form-select" name="year" onchange="this.form.submit()">
+                {% for y in range(selected_year - 5, selected_year + 6) %}
+                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
         </div>
-    </div>
+    </form>
+
+    <!-- Add new holiday form -->
+    <form method="POST" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <input type="date" name="date" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+            <input type="text" name="name" class="form-control" placeholder="Holiday Name" required>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" type="submit">Add Holiday</button>
+        </div>
+    </form>
+
+    <!-- Calendar table -->
+    <table class="table table-bordered text-center calendar-table">
+        <thead>
+            <tr>
+                <th colspan="7" class="bg-secondary text-white">
+                    {{ selected_year }}
+                </th>
+            </tr>
+            <tr>
+                <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% import 'macros.html' as macros %}
+            {% for month in range(1, 13) %}
+            <tr>
+                <td colspan="7" class="bg-light fw-bold">{{ macros.month_name(month) }}</td>
+            </tr>
+            {% set weeks = macros.month_weeks(selected_year, month) %}
+            {% for week in weeks %}
+            <tr>
+                {% for day in week %}
+                {% if day %}
+                {% set iso = day.strftime('%Y-%m-%d') %}
+                {% set is_today = (iso == today) %}
+                {% set is_weekend = (iso in weekends) %}
+                {% set is_holiday = (iso in db_holidays) %}
+                <td class="{% if is_today %}table-primary{% elif is_holiday %}table-danger{% elif is_weekend %}table-warning{% endif %}" style="vertical-align: top; height: 90px; width:14%;">
+                    <div>{{ day.day }}</div>
+                    {% if is_holiday %}
+                    <small class="text-danger">{{ db_holidays[iso] }}</small>
+                    {% endif %}
+                </td>
+                {% else %}
+                <td></td>
+                {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Holidays list table -->
+    <h4 class="mt-5">Holiday List</h4>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in all_holidays %}
+            <tr>
+                <td>{{ h.date }}</td>
+                <td>{{ h.name }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.delete_holiday', holiday_id=h._id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this holiday?');">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Add Department{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add New Department</h2>
+    <form method="POST" action="{{ url_for('admin.add_department') }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">Department Name</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="Enter department name" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="subdepartment" class="form-label">Subdepartment</label>
+            <input type="text" class="form-control" id="subdepartment" name="subdepartment" placeholder="Enter subdepartment name" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="manager_id" class="form-label">Assign Manager (optional)</label>
+            <select class="form-select" id="manager_id" name="manager_id">
+                <option value="">None</option>
+                {% for manager in managers %}
+                <option value="{{ manager._id }}">{{ manager.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Department</button>
+        <a href="{{ url_for('admin.add_user') }}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+</div>
+{% endblock %}
