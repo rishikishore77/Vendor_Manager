@@ -9,10 +9,20 @@ from bson.objectid import ObjectId
 from app.models.holiday import Holiday
 from datetime import date, datetime, timedelta
 import logging
+import calendar
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
 
+def get_year_calendar(year):
+    cal = calendar.Calendar(firstweekday=0)  # Monday=0
+    months = {}
+    for month in range(1, 13):
+        weeks = []
+        for week in cal.monthdatescalendar(year, month):
+            weeks.append(week)
+        months[month] = weeks
+    return months
 
 @admin_bp.route('/dashboard')
 @login_required
@@ -305,13 +315,11 @@ def upload_data():
 @role_required('admin')
 def holidays():
     site_id = session['site_id']
-    # Determine the selected year (from query or default to current year)
     try:
         selected_year = int(request.args.get('year', date.today().year))
     except ValueError:
         selected_year = date.today().year
 
-    # Add holiday if requested
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         holiday_date = request.form.get('date', '').strip()
@@ -328,14 +336,21 @@ def holidays():
     weekends = set()
     d = date(selected_year, 1, 1)
     while d.year == selected_year:
-        if d.weekday() in [5, 6]:  # Saturday=5, Sunday=6
+        if d.weekday() in [5, 6]:
             weekends.add(d.strftime('%Y-%m-%d'))
         d += timedelta(days=1)
 
-    # Today (as string)
+    # Generate calendar layout for each month
+    year_calendar = get_year_calendar(selected_year)
+    month_names = [
+        '', 'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+
+    # Today's date
     today = date.today().strftime('%Y-%m-%d')
 
-    # Optionally, fetch all holidays for listing (for management table)
+    # All holidays for management table
     all_holidays = Holiday.get_all(site_id)
 
     return render_template(
@@ -344,7 +359,9 @@ def holidays():
         weekends=weekends,
         today=today,
         selected_year=selected_year,
-        all_holidays=all_holidays
+        all_holidays=all_holidays,
+        year_calendar=year_calendar,
+        month_names=month_names
     )
 
 

@@ -28,48 +28,41 @@
         </div>
     </form>
 
-    <!-- Calendar table -->
-    <table class="table table-bordered text-center calendar-table">
-        <thead>
-            <tr>
-                <th colspan="7" class="bg-secondary text-white">
-                    {{ selected_year }}
-                </th>
-            </tr>
-            <tr>
-                <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% import 'macros.html' as macros %}
-            {% for month in range(1, 13) %}
-            <tr>
-                <td colspan="7" class="bg-light fw-bold">{{ macros.month_name(month) }}</td>
-            </tr>
-            {% set weeks = macros.month_weeks(selected_year, month) %}
-            {% for week in weeks %}
-            <tr>
-                {% for day in week %}
-                {% if day %}
-                {% set iso = day.strftime('%Y-%m-%d') %}
-                {% set is_today = (iso == today) %}
-                {% set is_weekend = (iso in weekends) %}
-                {% set is_holiday = (iso in db_holidays) %}
-                <td class="{% if is_today %}table-primary{% elif is_holiday %}table-danger{% elif is_weekend %}table-warning{% endif %}" style="vertical-align: top; height: 90px; width:14%;">
-                    <div>{{ day.day }}</div>
-                    {% if is_holiday %}
-                    <small class="text-danger">{{ db_holidays[iso] }}</small>
+    <!-- Yearwise calendar display -->
+    {% for month in range(1, 13) %}
+        <h5 class="mt-4">{{ month_names[month] }}</h5>
+        <table class="table table-bordered text-center calendar-table">
+            <thead>
+                <tr>
+                    <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th>
+                    <th>Fri</th><th>Sat</th><th>Sun</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in year_calendar[month] %}
+                <tr>
+                    {% for day in week %}
+                    {% set iso = day.strftime('%Y-%m-%d') %}
+                    {% set is_today = (iso == today) %}
+                    {% set is_weekend = (iso in weekends) %}
+                    {% set is_holiday = (iso in db_holidays) %}
+                    <!-- Only show cell for correct month dates -->
+                    {% if day.month == month %}
+                    <td class="calendar-day{% if is_today %} today{% endif %}{% if is_weekend %} weekend{% endif %}{% if is_holiday %} holiday{% endif %}" style="vertical-align: top; height: 90px; width:14%;">
+                        <div>{{ day.day }}</div>
+                        {% if is_holiday %}
+                        <small class="holiday-name">{{ db_holidays[iso] }}</small>
+                        {% endif %}
+                    </td>
+                    {% else %}
+                    <td></td>
                     {% endif %}
-                </td>
-                {% else %}
-                <td></td>
-                {% endif %}
+                    {% endfor %}
+                </tr>
                 {% endfor %}
-            </tr>
-            {% endfor %}
-            {% endfor %}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    {% endfor %}
 
     <!-- Holidays list table -->
     <h4 class="mt-5">Holiday List</h4>

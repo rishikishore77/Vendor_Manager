@@ -98,8 +98,32 @@ body {
 /* Style for holiday name inside calendar cell */
 .calendar-day .holiday-name {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #d63384;
     margin-top: 4px;
+    text-shadow: 0 1px 3px rgba(220, 53, 130, 0.12);
+}
+
+/* Slight shadow for today & holidays for visual pop */
+.calendar-day.holiday,
+.calendar-day.today {
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.07);
+}
+
+/* Calendar-day selection (future extensibility) */
+.calendar-day.selected {
+    outline: 2px solid #007bff;
+    background: #e3f2fd;
+}
+
+/* Responsive calendar adjustment */
+@media (max-width: 576px) {
+    .calendar-day {
+        min-height: 40px;
+        font-size: 0.95em;
+        padding: 2px;
+    }
 }
 
 /* Dashboard stats cards */
