@@ -104,41 +104,40 @@ def initialize_database():
 
         # Vendor user data: [Employee Code, Employee Name, Department Index, Subdepartment Index]
         vendor_data = [
-            ["OT0001", "Samuel Davis", 0, 0],
-            ["OT0002", "Dennis Moore", 0, 3],
-            ["OT0003", "Donald Rodriguez", 0, 1],
-            ["OT0004", "Patrick Mitchell", 0, 8],
-            ["OT0005", "James Nguyen", 0, 6],
-            ["OT0006", "Michael Johnson", 0, 1],
-            ["OT0007", "Mark Anderson", 0, 8],
-            ["OT0008", "Brandon Johnson", 0, 8],
-            ["OT0009", "Anthony Rivera", 0, 8],
-            ["OT0010", "Jason Anderson", 0, 7],
+            ["OT0001", "Samuel Davis"],
+            ["OT0002", "Dennis Moore"],
+            ["OT0003", "Donald Rodriguez"],
+            ["OT0004", "Patrick Mitchell"],
+            ["OT0005", "James Nguyen"],
+            ["OT0006", "Michael Johnson"],
+            ["OT0007", "Mark Anderson"],
+            ["OT0008", "Brandon Johnson"],
+            ["OT0009", "Anthony Rivera"],
+            ["OT0010", "Jason Anderson"],
             # ... More vendors as you had
         ]
 
         # Create vendors and assign random manager + assign department and vendor company refs
         logger.info("Creating vendor users...")
-        for i, (emp_code, emp_name, dept_idx, subdept_idx) in enumerate(vendor_data):
-            # Use departments list indexed by dept_idx for department_id (all BU1/D1) and subdepartment in original data
-            department_id = department_ids[dept_idx]  # all BU1/D1 here
-            # For subdepartment, we are storing as field on user, can store string or ref if desired
-            subdepartment_val = subdepartments[subdept_idx]
-            assigned_manager = random.choice(manager_ids)
+        for i, (emp_code, emp_name) in enumerate(vendor_data):
+            # Randomly assign a manager from the created managers
+            assigned_manager_id = random.choice(manager_ids)
             # Cycle vendor_company_ids
             vendor_company_id = vendor_company_ids[i % len(vendor_company_ids)]
 
+            assigned_manager = User.find_by_id(assigned_manager_id)
+            department = Department.find_by_id(assigned_manager['department_id'])
             User.create(
                 username=emp_code.lower(),
                 password="password123",
                 role="vendor",
                 name=emp_name,
                 site_id=site_id,
-                manager_id=assigned_manager,
+                manager_id= assigned_manager_id,
                 vendor_company_id=vendor_company_id,
                 employee_code=emp_code,
-                department_id=department_id,
-                subdepartment=subdepartment_val
+                department_id=str(department['_id']),
+                subdepartment=department['subdepartment']
             )
         logger.info(f"{len(vendor_data)} vendor users created and assigned to managers and companies.")
 

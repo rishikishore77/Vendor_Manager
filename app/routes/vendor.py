@@ -1,9 +1,11 @@
 """Vendor routes"""
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.models.user import User
+from app.models.holiday import Holiday
 from app.models.attendance import Attendance
 from app.utils.helpers import login_required, role_required, get_month_calendar, is_working_day
-from datetime import datetime
+from datetime import datetime, date
+import calendar
 import logging
 
 logger = logging.getLogger(__name__)
@@ -81,8 +83,8 @@ def mark_attendance():
 @login_required
 @role_required('vendor')
 def calendar_view():
-    """Attendance calendar"""
     user_id = session['user_id']
+    site_id = session['site_id']
 
     try:
         year = int(request.args.get('year', datetime.now().year))
@@ -93,30 +95,56 @@ def calendar_view():
 
         calendar_data = get_month_calendar(year, month)
 
-        # Navigation
+        # Fetch holidays for the current month (all holidays for the site that match the month)
+        holidays = [
+            h for h in Holiday.get_all(site_id)
+            if h['date'].startswith(f"{year}-") and int(h['date'][5:7]) == month
+        ]
+        holidays_dict = {h['date']: h['name'] for h in holidays}
+
+        # (Optional: get all weekends for this month for coloring)
+        weekends = set()
+        d = date(year, month, 1)
+        while d.month == month:
+            if d.weekday() in [5, 6]:
+                weekends.add(d.strftime('%Y-%m-%d'))
+            d = d.replace(day=d.day + 1) if d.day < (calendar.monthrange(year, month)[1]) else d.replace(month=month+1, day=1)
+
         prev_month = month - 1 if month > 1 else 12
         prev_year = year if month > 1 else year - 1
         next_month = month + 1 if month < 12 else 1
         next_year = year if month < 12 else year + 1
 
-        return render_template('vendor/calendar.html',
-                             calendar_data=calendar_data,
-                             attendance_map=attendance_map,
-                             prev_month=prev_month,
-                             prev_year=prev_year,
-                             next_month=next_month,
-                             next_year=next_year)
+        return render_template(
+            'vendor/calendar.html',
+            calendar_data=calendar_data,
+            attendance_map=attendance_map,
+            holidays=holidays_dict,
+            weekends=weekends,
+            prev_month=prev_month,
+            prev_year=prev_year,
+            next_month=next_month,
+            next_year=next_year,
+            year=year,
+            month=month
+        )
 
     except Exception as e:
         logger.error(f"Calendar view error: {e}")
         flash('Error loading calendar', 'error')
-        return render_template('vendor/calendar.html',
-                             calendar_data=get_month_calendar(datetime.now().year, datetime.now().month),
-                             attendance_map={},
-                             prev_month=datetime.now().month-1,
-                             prev_year=datetime.now().year,
-                             next_month=datetime.now().month+1,
-                             next_year=datetime.now().year)
+        return render_template(
+            'vendor/calendar.html',
+            calendar_data=get_month_calendar(datetime.now().year, datetime.now().month),
+            attendance_map={},
+            holidays={},
+            weekends=set(),
+            prev_month=datetime.now().month-1,
+            prev_year=datetime.now().year,
+            next_month=datetime.now().month+1,
+            next_year=datetime.now().year,
+            year=datetime.now().year,
+            month=datetime.now().month
+        )
 
 @vendor_bp.route('/history')
 @login_required

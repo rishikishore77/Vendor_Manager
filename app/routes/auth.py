@@ -1,6 +1,8 @@
 """Authentication routes"""
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.models.user import User
+from app.models.department import Department
+from app.models.vending_company import VendingCompany
 import logging
 
 logger = logging.getLogger(__name__)
@@ -80,5 +82,22 @@ def profile():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
 
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+
     user = User.find_by_id(session['user_id'])
+
+    company_name = None
+    department_name = None
+
+    if user and user.get('role') == 'vendor':
+        # Direct fetch by ID (assuming you have find_by_id implemented)
+        vc = VendingCompany.find_by_id(user.get('vendor_company_id'))
+        dept = Department.find_by_id(user.get('department_id'))
+
+        company_name = vc.get('name') if vc else 'N/A'
+        department_name = f"{dept.get('name')}/{dept.get('subdepartment')}" if dept else 'N/A'
+
+    user['vendor_company'] = company_name
+    user['department'] = department_name
     return render_template('auth/profile.html', user=user)

@@ -33,15 +33,22 @@
                             {% for week in calendar_data.calendar %}
                             <tr>
                                 {% for day in week %}
-                                <td class="p-2" style="height: 100px; width: 14.28%; vertical-align: top;">
+                                {% set date_str = "%04d-%02d-%02d"|format(calendar_data.year, calendar_data.month, day) %}
+                                {% set is_holiday = holidays.get(date_str) %}
+                                {% set is_weekend = weekends and (date_str in weekends) %}
+                                <td class="p-2{% if is_holiday %} calendar-day holiday{% endif %}{% if is_weekend %} calendar-day weekend{% endif %}" style="height: 100px; width: 14.28%; vertical-align: top;">
                                     {% if day != 0 %}
                                         <div class="fw-bold">{{ day }}</div>
-                                        {% set date_str = "%04d-%02d-%02d"|format(calendar_data.year, calendar_data.month, day) %}
+                                        {% if is_holiday %}
+                                            <div class="holiday-name text-danger mt-1">
+                                                <i class="fas fa-gift"></i> {{ holidays[date_str] }}
+                                            </div>
+                                        {% endif %}
                                         {% if attendance_map.get(date_str) %}
                                             {% set attendance = attendance_map[date_str] %}
                                             <div class="mt-1">
-                                                <small class="badge bg-{{ 'success' if attendance.approval_status == 'Approved' else 'warning' if attendance.approval_status == 'Pending' else 'danger' }}">
-                                                    {{ attendance.status[:10] }}...
+                                                <small title="{{ attendance.status }}" class="badge bg-{{ 'success' if attendance.approval_status == 'Approved' else 'warning' if attendance.approval_status == 'Pending' else 'danger' }}">
+                                                    {{ attendance.status }}
                                                 </small>
                                             </div>
                                         {% endif %}
@@ -68,6 +75,8 @@
                 <span class="badge bg-warning me-2">Pending</span>
                 <span class="badge bg-danger me-2">Rejected</span>
                 <span class="badge bg-secondary me-2">No Entry</span>
+                <span class="badge bg-light border text-danger me-2"><i class="fas fa-gift"></i> Holiday</span>
+                <span class="badge bg-light border text-warning me-2">Weekend</span>
             </div>
         </div>
     </div>
