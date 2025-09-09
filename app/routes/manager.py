@@ -4,6 +4,9 @@ from app.models.user import User
 from app.models.attendance import Attendance
 from app.utils.helpers import login_required, role_required
 from bson.objectid import ObjectId
+from datetime import date
+from app.utils.database import Database
+from app.models.vending_company import VendingCompany
 import logging
 
 logger = logging.getLogger(__name__)
@@ -77,8 +80,88 @@ def approve_attendance():
 @login_required
 @role_required('manager')
 def team_data():
-    """Team data view"""
-    return render_template('manager/team_data.html', team_members=[], records=[])
+    site_id = session['site_id']
+    manager_id = session['user_id']
+
+    # Get single employee_id from request args
+    employee_id = request.args.get('employee_id', '').strip()
+    status = request.args.get('status', '')
+    vendor_company_id = request.args.get('vendor_company_id', '')
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+
+    # Build user query with single employee filter
+    user_query = {
+        'site_id': site_id,
+        'role': 'vendor',
+        'manager_id': manager_id
+    }
+    if employee_id:
+        try:
+            user_query['_id'] = ObjectId(employee_id)
+        except Exception as e:
+            logger.error(f"Invalid employee ID in filter: {e}")
+    if vendor_company_id:
+        user_query['vendor_company_id'] = vendor_company_id
+
+    team_members = User.find(user_query)
+    vendor_companies = VendingCompany.get_all(site_id)
+    vendor_company_map = {str(vc['_id']): vc['name'] for vc in vendor_companies}
+
+    # Prepare attendance aggregation pipeline for all team members
+    user_ids = [str(m['_id']) for m in team_members]
+    attendance_match = {
+        'user_id': {'$in': user_ids}
+    }
+    if start_date and end_date:
+        attendance_match['date'] = {'$gte': start_date, '$lte': end_date}
+    elif start_date:
+        attendance_match['date'] = {'$gte': start_date}
+    elif end_date:
+        attendance_match['date'] = {'$lte': end_date}
+    if status:
+        attendance_match['status'] = status
+
+    pipeline = [
+        { '$match': attendance_match },
+        { '$sort': { 'updated_at': -1 } },
+        { '$group': {
+            '_id': { 'user_id': '$user_id', 'date': '$date' },
+            'doc': { '$first': "$$ROOT" }
+        }},
+        { '$replaceRoot': { 'newRoot': '$doc' } }
+    ]
+
+    attendance_records = Database.aggregate('attendance', pipeline)
+
+    # Combine attendance with user info for display
+    member_info_map = {str(m['_id']): m for m in team_members}
+    records = []
+    for record in attendance_records:
+        user_info = member_info_map.get(record['user_id'])
+        vendor_company = vendor_company_map.get(str(user_info.get('vendor_company_id')), 'N/A') if user_info else 'N/A'
+        record['user_info'] = {
+            'name': user_info.get('name', 'N/A') if user_info else 'N/A',
+            'vendor_company': vendor_company
+        }
+        records.append(record)
+
+    filters = {
+        'employee_id': employee_id,
+        'status': status,
+        'vendor_company_id': vendor_company_id,
+        'start_date': start_date,
+        'end_date': end_date
+    }
+
+    return render_template(
+        'manager/team_data.html',
+        team_members=team_members,
+        records=records,
+        vendor_companies=vendor_companies,
+        filters=filters
+    )
+
 
 @manager_bp.route('/mismatches')
 @login_required

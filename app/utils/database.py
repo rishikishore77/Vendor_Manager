@@ -80,3 +80,13 @@ class Database:
         except Exception as e:
             logger.error(f"Update error in {collection_name}: {e}")
             return 0
+
+    @staticmethod
+    def aggregate(collection_name, pipeline):
+        """Run aggregation pipeline on a collection"""
+        try:
+            collection = Database.get_collection(collection_name)
+            return list(collection.aggregate(pipeline))
+        except Exception as e:
+            logger.error(f"Aggregate error in {collection_name}: {e}")
+            return []

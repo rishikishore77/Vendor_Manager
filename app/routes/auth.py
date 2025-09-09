@@ -93,11 +93,12 @@ def profile():
     if user and user.get('role') == 'vendor':
         # Direct fetch by ID (assuming you have find_by_id implemented)
         vc = VendingCompany.find_by_id(user.get('vendor_company_id'))
-        dept = Department.find_by_id(user.get('department_id'))
-
         company_name = vc.get('name') if vc else 'N/A'
-        department_name = f"{dept.get('name')}/{dept.get('subdepartment')}" if dept else 'N/A'
+        user['vendor_company'] = company_name
 
-    user['vendor_company'] = company_name
-    user['department'] = department_name
+    elif user and (user.get('role') == 'vendor' or user.get('role') == 'manager'):
+        dept = Department.find_by_id(user.get('department_id'))
+        department_name = f"{dept.get('name')}/{dept.get('subdepartment')}" if dept else 'N/A'
+        user['department'] = department_name
+        
     return render_template('auth/profile.html', user=user)

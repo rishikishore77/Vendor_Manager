@@ -132,3 +132,8 @@ class Attendance:
                 summary['rejected'] += 1
 
         return summary
+    
+    @staticmethod
+    def find(query, sort=None):
+        """Find attendance records matching query (optionally sorted)"""
+        return Database.find(Attendance.COLLECTION, query, sort=sort)
