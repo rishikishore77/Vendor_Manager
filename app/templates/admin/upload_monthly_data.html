@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Data for {{ month_year }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4><i class="fas fa-upload"></i> Upload Data Files for {{ month_year }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="data_type" class="form-label">Data Type</label>
+                        <select class="form-select" id="data_type" name="data_type" required>
+                            <option value="">Select Data Type</option>
+                            <option value="leave_data">Time-off Data</option>
+                            <option value="wfh_data">Work From Home Data</option>
+                            <option value="swipe_data">Attendance Swipe Data</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Month/Year</label>
+                        <div><strong>{{ month_year }}</strong></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload File</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls,.csv" required>
+                        <div class="form-text">Supported formats: Excel (.xlsx, .xls) and CSV (.csv)</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-upload"></i> Upload Data
+                    </button>
+                    <a href="{{ url_for('admin.monthly_cycles') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

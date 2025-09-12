@@ -9,6 +9,23 @@
         </div>
     </div>
 
+    <!-- Allowed attendance marking date range info -->
+    <div class="alert alert-info mt-3">
+        You can mark or update attendance from <strong>{{ allowed_range.start_date }}</strong>
+        up to <strong>{{ allowed_range.end_date }}</strong>.
+    </div>
+
+    <!-- Urgent Mismatches Alert -->
+    {% if stats.urgent_mismatch_count and stats.urgent_mismatch_count > 0 %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i> 
+        <strong>Urgent!</strong> You have {{ stats.urgent_mismatch_count }} mismatch(es) with deadlines approaching.
+        <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-sm btn-danger ms-2">
+            <i class="fas fa-arrow-right"></i> Resolve Now
+        </a>
+    </div>
+    {% endif %}
+
     <div class="row">
         <!-- Today's Status -->
         <div class="col-md-6">
@@ -113,7 +130,7 @@
                         </div>
                         <div class="col-md-3">
                             <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-outline-warning w-100 mb-2">
-                                <i class="fas fa-exclamation-triangle"></i><br>Mismatches
+                                <i class="fas fa-exclamation-triangle"></i><br>Mismatches ({{ stats.mismatch_count or 0 }})
                             </a>
                         </div>
                     </div>
@@ -121,73 +138,78 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Attendance Modal -->
-<div class="modal fade" id="attendanceModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Mark Attendance</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- Attendance Modal -->
+    <div class="modal fade" id="attendanceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mark Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="date" class="form-control" required
+                                min="{{ allowed_range.start_date }}" max="{{ allowed_range.end_date }}"
+                                value="{{ today }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select" required>
+                                <option value="">Select Status</option>
+                                <option value="In office full day">In office full day</option>
+                                <option value="Office half + work from home half">Office half + work from home half</option>
+                                <option value="Office half + leave half">Office half + leave half</option>
+                                <option value="Work from home full">Work from home full</option>
+                                <option value="Leave">Leave</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Comments</label>
+                            <textarea name="comments" class="form-control" rows="3" placeholder="Optional comments..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Mark Attendance</button>
+                    </div>
+                </form>
             </div>
-            <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
-                <div class="modal-body">
-                    <input type="hidden" name="date" value="{{ today }}">
-
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-select" required>
-                            <option value="">Select Status</option>
-                            <option value="In office full day">In office full day</option>
-                            <option value="Office half + work from home half">Office half + work from home half</option>
-                            <option value="Office half + leave half">Office half + leave half</option>
-                            <option value="Work from home full">Work from home full</option>
-                            <option value="Leave">Leave</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Comments</label>
-                        <textarea name="comments" class="form-control" rows="3" placeholder="Optional comments..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Mark Attendance</button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
 
-<!-- Future Leave Modal -->
-<div class="modal fade" id="futureLeaveModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Mark Future Leave</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- Future Leave Modal -->
+    <div class="modal fade" id="futureLeaveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mark Future Leave</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="date" class="form-control" required min="{{ today }}">
+                        </div>
+
+                        <input type="hidden" name="status" value="Leave">
+
+                        <div class="mb-3">
+                            <label class="form-label">Reason</label>
+                            <textarea name="comments" class="form-control" rows="3" placeholder="Reason for leave..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Mark Leave</button>
+                    </div>
+                </form>
             </div>
-            <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" name="date" class="form-control" required min="{{ today }}">
-                    </div>
-
-                    <input type="hidden" name="status" value="Leave">
-
-                    <div class="mb-3">
-                        <label class="form-label">Reason</label>
-                        <textarea name="comments" class="form-control" rows="3" placeholder="Reason for leave..." required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">Mark Leave</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>

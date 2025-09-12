@@ -59,3 +59,9 @@ def is_working_day(date, holidays=None):
     # Check if it's a holiday
     date_str = date.strftime('%Y-%m-%d')
     return date_str not in holidays
+
+def allowed_file(filename):
+    allowed_extensions = {'xlsx', 'xls', 'csv'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in allowed_extensions
+

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Pending Approvals{% endblock %}
+{% block content %}
+<h2>Pending Approvals</h2>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Previous Status</th>
+                <th>New Status</th>
+                <th>Previous Comments</th>
+                <th>New Comments</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for attendance in records %}
+            <tr>
+                <td>{{ attendance.user_info.name if attendance.user_info else 'N/A' }}</td>
+                <td>{{ attendance.date }}</td>
+                <td>
+                    {% if attendance.reapproval_required %}
+                        <span class="badge bg-warning">Reapproval</span>
+                    {% else %}
+                        <span class="badge bg-info">New Approval</span>
+                    {% endif %}
+                </td>
+                <td>{{ attendance.previous_data.status if attendance.reapproval_required else '-' }}</td>
+                <td>{{ attendance.current_data.status if attendance.reapproval_required else attendance.status }}</td>
+                <td>{{ attendance.previous_data.comments if attendance.reapproval_required else '-' }}</td>
+                <td>{{ attendance.current_data.comments if attendance.reapproval_required else attendance.comments }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('manager.approve_attendance') }}">
+                        <input type="hidden" name="attendance_id" value="{{ attendance._id }}">
+                        <button name="action" value="approve" class="btn btn-success btn-sm"><i class="fas fa-check"></i> Approve</button>
+                        <button name="action" value="reject" class="btn btn-danger btn-sm"><i class="fas fa-times"></i> Reject</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8">No pending approvals</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

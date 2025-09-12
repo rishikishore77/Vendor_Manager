@@ -81,10 +81,7 @@ def profile():
     """User profile"""
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
+    
     user = User.find_by_id(session['user_id'])
 
     company_name = None
@@ -96,7 +93,11 @@ def profile():
         company_name = vc.get('name') if vc else 'N/A'
         user['vendor_company'] = company_name
 
-    elif user and (user.get('role') == 'vendor' or user.get('role') == 'manager'):
+        manager = User.find_by_id(user.get('manager_id'))
+        manager_name = manager.get('name') if manager else 'N/A'
+        user['manager_name'] = manager_name
+
+    if user and (user.get('role') == 'vendor' or user.get('role') == 'manager'):
         dept = Department.find_by_id(user.get('department_id'))
         department_name = f"{dept.get('name')}/{dept.get('subdepartment')}" if dept else 'N/A'
         user['department'] = department_name

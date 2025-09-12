@@ -15,6 +15,12 @@ from bson.objectid import ObjectId
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def generate_email(name, prefix="ot"):
+    # Remove spaces, lowercase everything
+    username = ''.join(name.lower().split())
+    return f"{prefix}_{username}@test.com"
+
+
 def initialize_database():
     """Initialize database with sample data"""
 
@@ -82,6 +88,7 @@ def initialize_database():
                 password="password123",
                 role="manager",
                 name=name,
+                email=generate_email(name, prefix=""),
                 site_id=site_id,
                 department_id=None,  # will assign below after department creation
                 subdepartment=subdepartments[i % len(subdepartments)]
@@ -132,6 +139,7 @@ def initialize_database():
                 password="password123",
                 role="vendor",
                 name=emp_name,
+                email=generate_email(emp_name),
                 site_id=site_id,
                 manager_id= assigned_manager_id,
                 vendor_company_id=vendor_company_id,

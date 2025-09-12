@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+  <h2><i class="fas fa-calendar-alt"></i> Monthly Cycle Management</h2>
+  <a href="{{ url_for('admin.monthly_cycles') }}">
+    <i class="fas fa-plus"></i> Create New Cycle
+  </a>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th>Status</th>
+        <th>Data Upload Status</th>
+        <th>Mismatches</th>
+        <th>Deadline</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cycle in cycles %}
+      <tr>
+        <td>{{ cycle.month_year }}</td>
+        <td><span>{{ cycle.status|title }}</span></td>
+        <td>
+          <small>
+            Swipe <span>{% if cycle.data_upload_status.swipe_data.uploaded %}&#10003;{% else %}&#10007;{% endif %}</span><br>
+            WFH <span>{% if cycle.data_upload_status.wfh_data.uploaded %}&#10003;{% else %}&#10007;{% endif %}</span><br>
+            Leave <span>{% if cycle.data_upload_status.leave_data.uploaded %}&#10003;{% else %}&#10007;{% endif %}</span>
+          </small>
+        </td>
+        <td>{{ cycle.mismatch_count or 0 }}</td>
+        <td>{{ cycle.mismatch_deadline.strftime('%Y-%m-%d') if cycle.mismatch_deadline else '' }}</td>
+        <td>
+          <!-- Changed to upload_monthly_data with month_year param -->
+          <a href="{{ url_for('admin.upload_monthly_data', month_year=cycle.month_year) }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-upload"></i> Upload Data
+          </a>
+
+          {% if cycle.status == 'active' and cycle.all_data_uploaded %}
+          <form method="POST" action="{{ url_for('admin.process_mismatches', month_year=cycle.month_year) }}" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-warning">
+              <i class="fas fa-search"></i> Process
+            </button>
+          </form>
+          {% endif %}
+          {% if cycle.status == 'processing' %}
+          <a href="{{ url_for('admin.workdays_report', month_year=cycle.month_year) }}" class="btn btn-sm btn-success">
+            <i class="fas fa-file-alt"></i> Generate
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

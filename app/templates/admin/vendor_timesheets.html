@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Vendor Timesheets{% endblock %}
+{% block content %}
+<h2>Vendor Timesheets</h2>
+
+<form method="GET" class="row gy-2 gx-2 align-items-end mb-3">
+  <div class="col-md-4">
+    <label for="vending_company" class="form-label">Vending Company</label>
+    <select id="vending_company" name="vending_company_id" class="form-select">
+      <option value="">All Companies</option>
+      {% for comp in vending_companies %}
+      <option value="{{ comp._id }}" {% if filters.vending_company_id == comp._id|string %}selected{% endif %}>{{ comp.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label for="month_year" class="form-label">Month</label>
+    <input id="month_year" name="month_year" type="month" class="form-control" value="{{ filters.month_year }}">
+  </div>
+  <div class="col-md-4">
+    <button type="submit" class="btn btn-primary w-100">Filter</button>
+  </div>
+</form>
+
+<div class="mb-3">
+  <a href="{{ url_for('admin.vendor_timesheets', export='true', vending_company_id=filters.vending_company_id, month_year=filters.month_year) }}" class="btn btn-success">
+    Export to Excel
+  </a>
+</div>
+
+<table class="table table-bordered table-striped table-hover">
+  <thead>
+    <tr>
+      <th>Vendor Name</th>
+      <th>Month-Year</th>
+      <th>Worked Days</th>
+      <th>Mismatch Leave Days</th>
+      <th>Offset Days</th>
+      <th>Total Days (with offset)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ts in timesheets %}
+    <tr>
+      <td>{{ ts['Vendor Name'] }}</td>
+      <td>{{ ts['Month-Year'] }}</td>
+      <td>{{ ts['Worked Days'] }}</td>
+      <td>{{ ts['Mismatch Leave Days'] }}</td>
+      <td>{{ ts['Offset Days'] }}</td>
+      <td>{{ ts['Total Days (with offset)'] }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="6" class="text-center">No timesheet records found.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

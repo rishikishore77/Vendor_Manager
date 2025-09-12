@@ -1,102 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Team Data{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h2><i class="fas fa-users"></i> Team Data</h2>
+<div class="container-fluid">
+    <h2><i class="fas fa-calendar-check"></i> Team Attendance</h2>
+    {% if attendance_records %}
+    <div class="table-responsive mt-3">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Employee</th>
+                    <th>Status</th>
+                    <th>Final Status</th>
+                    <th>Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in attendance_records %}
+                <tr>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.user_info.name if record.user_info else 'N/A' }}</td>
+                    <td>
+                        <span class="badge bg-{% if record.status == 'Pending' %}warning
+                                               {% elif record.status == 'In office full day' %}success
+                                               {% elif record.status == 'Leave' %}danger
+                                               {% else %}info{% endif %}">
+                            {{ record.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if record.final_status == 'Pending' %}warning
+                                               {% elif record.final_status == 'In office full day' %}success
+                                               {% elif record.final_status == 'Leave' %}danger
+                                               {% else %}info{% endif %}">
+                            {{ record.final_status or '-' }}
+                        </span>
+                    </td>
+                    <td>{{ record.comments or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-table"></i> Team Attendance Records</h5>
-            </div>
-            <div class="card-body">
-
-                <!-- Filter/Search Form -->
-                <form method="get" class="row g-3 mb-4">
-                    <div class="col-md-3">
-                        <label for="employee_id" class="form-label">Select Employee</label>
-                        <select name="employee_id" id="employee_id" class="form-select" aria-label="Employee filter">
-                            <option value="">All Employees</option>
-                            {% for member in team_members %}
-                                <option value="{{ member._id }}" {% if filters.employee_id == member._id|string %}selected{% endif %}>{{ member.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="status" class="form-label">Select Status</label>
-                        <select name="status" class="form-select" aria-label="Attendance status filter">
-                            <option value="">All Statuses</option>
-                            <option value="In office full day" {% if filters.status == 'In office full day' %}selected{% endif %}>In office full day</option>
-                            <option value="Office half + work from home half" {% if filters.status == 'Office half + work from home half' %}selected{% endif %}>Office half + work from home half</option>
-                            <option value="Office half + leave half" {% if filters.status == 'Office half + leave half' %}selected{% endif %}>Office half + leave half</option>
-                            <option value="Work from home full" {% if filters.status == 'Work from home full' %}selected{% endif %}>Work from home full</option>
-                            <option value="Holiday" {% if filters.status == 'Holiday' %}selected{% endif %}>Holiday</option>
-                            <option value="Leave" {% if filters.status == 'Leave' %}selected{% endif %}>Leave</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="vendor_company_id" class="form-label">Select Vending Company</label>
-                        <select name="vendor_company_id" class="form-select" aria-label="Vendor company filter">
-                            <option value="">All Companies</option>
-                            {% for company in vendor_companies %}
-                                <option value="{{ company._id }}" {% if filters.vendor_company_id == company._id|string %}selected{% endif %}>{{ company.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="start_date" class="form-label">Select Start Date</label>
-                        <input type="date" name="start_date" class="form-control" value="{{ filters.start_date }}" aria-label="Start date filter">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="end_date" class="form-label">Select End Date</label>
-                        <input type="date" name="end_date" class="form-control" value="{{ filters.end_date }}" aria-label="End date filter">
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Filter</button>
-                    </div>
-                </form>
-                <!-- End Filter/Search Form -->
-
-                {% if records %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Approval</th>
-                                    <th>Company</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for record in records %}
-                                <tr>
-                                    <td>{{ record.user_info.name if record.user_info else 'N/A' }}</td>
-                                    <td>{{ record.date }}</td>
-                                    <td>{{ record.status }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ 'success' if record.approval_status == 'Approved' else 'warning' if record.approval_status == 'Pending' else 'danger' }}">
-                                            {{ record.approval_status }}
-                                        </span>
-                                    </td>
-                                    <td>{{ record.user_info.vendor_company if record.user_info else 'N/A' }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> No team data found.
-                    </div>
-                {% endif %}
-            </div>
-        </div>
+    {% else %}
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle"></i> No attendance records found for your team.
     </div>
+    {% endif %}
+    <a href="{{ url_for('manager.dashboard') }}" class="btn btn-secondary mt-3">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
 </div>
 {% endblock %}

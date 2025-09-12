@@ -1,55 +1,100 @@
 {% extends "base.html" %}
-{% block title %}Team Mismatches{% endblock %}
+{% block title %}Manager Mismatches{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h2><i class="fas fa-clipboard-check"></i> Team Mismatches</h2>
-    </div>
-</div>
+<h2>Team Mismatches</h2>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5><i class="fas fa-exclamation-triangle"></i> Team Data Mismatches</h5>
-            </div>
-            <div class="card-body">
-                {% if team_mismatches %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Date</th>
-                                    <th>Issue</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for mismatch in team_mismatches %}
-                                <tr>
-                                    <td>{{ mismatch.user_info.name if mismatch.user_info else 'N/A' }}</td>
-                                    <td>{{ mismatch.date }}</td>
-                                    <td>{{ mismatch.message }}</td>
-                                    <td>
-                                        <span class="badge bg-warning">{{ mismatch.status }}</span>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-primary">Review</button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+{% if mismatches %}
+
+<form method="GET" action="{{ url_for('manager.mismatches') }}" class="mb-3 row g-2 align-items-end">
+  <div class="col-auto">
+    <label for="vendor_name" class="form-label">Vendor Name</label>
+    <input type="text" id="vendor_name" name="vendor_name" class="form-control" value="{{ request.args.get('vendor_name', '') }}">
+  </div>
+  <div class="col-auto">
+    <label for="status" class="form-label">Resolution Status</label>
+    <select id="status" name="status" class="form-select">
+      <option value="" {% if not request.args.get('status') %}selected{% endif %}>All</option>
+      <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending Vendor Input</option>
+      <option value="vendor_updated" {% if request.args.get('status') == 'vendor_updated' %}selected{% endif %}>Vendor Updated</option>
+      <option value="manager_approved" {% if request.args.get('status') == 'manager_approved' %}selected{% endif %}>Approved</option>
+      <option value="manager_rejected" {% if request.args.get('status') == 'manager_rejected' %}selected{% endif %}>Rejected</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <label for="start_date" class="form-label">Start Date</label>
+    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}">
+  </div>
+  <div class="col-auto">
+    <label for="end_date" class="form-label">End Date</label>
+    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}">
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+</form>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Vendor Name</th>
+            <th>Attendance Status</th>
+            <th>Mismatch Reason</th>
+            <th>Resolution Status</th>
+            <th>Vendor Reason</th>
+            <th>Manager Approval</th>
+            <th>Manager Comments</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for mismatch in mismatches %}
+        <tr>
+            <td>{{ mismatch.date }}</td>
+            <td>{{ mismatch.user_info.name if mismatch.user_info else 'N/A' }}</td>
+            <td>{{ mismatch.attendance_status or '-' }}</td>
+            <td>
+                {% for reason in mismatch.mismatch_type %}
+                    {{ reason }}<br>
+                {% endfor %}
+            </td>
+            <td>
+                {% if mismatch.status == 'pending' %}
+                    <span class="badge bg-secondary">Pending Vendor Input</span>
+                {% elif mismatch.status == 'vendor_updated' %}
+                    <span class="badge bg-info">Vendor Updated</span>
+                {% elif mismatch.status == 'manager_approved' %}
+                    <span class="badge bg-success">Approved</span>
+                {% elif mismatch.status == 'manager_rejected' %}
+                    <span class="badge bg-danger">Rejected</span>
                 {% else %}
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i> No mismatches found for your team.
-                    </div>
+                    <span class="badge bg-light">Unknown</span>
                 {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
+            </td>
+            <td>{{ mismatch.vendor_reason or '-' }}</td>
+            <td>
+            {% if mismatch.status == 'vendor_updated' %}
+            <form method="POST" action="{{ url_for('manager.mismatch_approval') }}">
+                <input type="hidden" name="mismatch_id" value="{{ mismatch._id }}">
+                <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
+                <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                <textarea name="manager_comments" class="form-control mt-1" placeholder="Comments...">{{ mismatch.manager_comments or '' }}</textarea>
+            </form>
+            {% else %}
+                <span class="text-muted">No action available</span>
+            {% endif %}
+            </td>
+            <td>
+            {% if mismatch.manager_comments %}
+                <div class="manager-comments">{{ mismatch.manager_comments }}</div>
+            {% else %}
+                <span class="text-muted">No comments</span>
+            {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No mismatches found for your team.</p>
+{% endif %}
 {% endblock %}

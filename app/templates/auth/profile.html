@@ -36,6 +36,10 @@
                                 <td><strong>Company:</strong></td>
                                 <td>{{ user.vendor_company or 'N/A' }}</td>
                             </tr>
+                            <tr>
+                                <td><strong>Manager:</strong></td>
+                                <td>{{ user.manager_name or 'N/A' }}</td>
+                            </tr>
                             {% endif %}
                             {% if user and (user.role == 'vendor' or user.role == 'manager') %}
                             <tr>

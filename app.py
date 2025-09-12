@@ -60,6 +60,10 @@ def create_app(config_name='development'):
     app.jinja_env.filters['lookup_department'] = lookup_department_by_id
     app.jinja_env.filters['find_by_str_id'] = find_by_str_id
 
+    @app.template_global('now')
+    def now():
+        return datetime.utcnow()
+
     @app.route('/')
     def index():
         """Home page - redirect based on user role"""

@@ -7,51 +7,87 @@
     </div>
 </div>
 
+<!-- Filter Form -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-auto">
+                <label for="start_date" class="form-label mb-0">Start Date</label>
+                <input type="date" name="start_date" id="start_date" value="{{ filters.start_date or '' }}" class="form-control">
+            </div>
+            <div class="col-auto">
+                <label for="end_date" class="form-label mb-0">End Date</label>
+                <input type="date" name="end_date" id="end_date" value="{{ filters.end_date or '' }}" class="form-control">
+            </div>
+            <div class="col-auto">
+                <label for="status" class="form-label mb-0">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    {% for st in statuses %}
+                        <option value="{{ st }}" {% if filters.status == st %}selected{% endif %}>{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary mt-4">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
                 <h5><i class="fas fa-list"></i> Attendance Records</h5>
             </div>
-            <div class="card-body">
-                {% if records %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Comments</th>
-                                    <th>Approval</th>
-                                    <th>Updated</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for record in records %}
-                                <tr>
-                                    <td>{{ record.date }}</td>
-                                    <td>
-                                        <span class="badge bg-info">{{ record.status }}</span>
-                                    </td>
-                                    <td>{{ record.comments or '-' }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ 'success' if record.approval_status == 'Approved' else 'warning' if record.approval_status == 'Pending' else 'danger' }}">
-                                            {{ record.approval_status }}
-                                        </span>
-                                    </td>
-                                    <td>{{ record.updated_at.strftime('%Y-%m-%d %H:%M') if record.updated_at else '-' }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> No attendance records found.
-                    </div>
-                {% endif %}
+            <div class="card-body" style="padding: 0;">
+                <!-- scroll container -->
+                <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Approval</th>
+                                <th>Updated</th>
+                                <th>Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                            <tr>
+                                <td>{{ record.date }}</td>
+                                <td>{{ record.status }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if record.approval_status == 'Approved' else 'warning' if record.approval_status == 'Pending' else 'danger' }}">
+                                        {{ record.approval_status }}
+                                    </span>
+                                </td>
+                                <td>{{ record.updated_at.strftime('%Y-%m-%d %H:%M') if record.updated_at else '-' }}</td>
+                                <td>{{ record.comments or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.table-responsive {
+    position: relative;
+}
+
+/* sticky header */
+.table-responsive thead th {
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 1020; /* higher than tbody */
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+}
+</style>
 {% endblock %}

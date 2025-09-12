@@ -1,39 +1,88 @@
 {% extends "base.html" %}
-{% block title %}Mismatches{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h2><i class="fas fa-exclamation-triangle"></i> Data Mismatches</h2>
-    </div>
-</div>
+<div>
+  <h2><i class="fas fa-exclamation-triangle"></i> My Mismatches</h2>
+  {% if mismatches %}
+  <div>
+    <i class="fas fa-clock"></i>
+    You have {{ mismatches|length }} mismatch(es) that need resolution.
+  </div>
+  <div>
+    <table class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Original Status</th>
+          <th>Issue</th>
+          <th>Deadline</th>
+          <th>Resolution Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mismatch in mismatches %}
+        <tr>
+          <td>{{ mismatch.date }}</td>
+          <td>{{ mismatch.original_status }}</td>
+          <td>{{ mismatch.mismatch_type|replace('_',' ')|title }}</td>
+          <td><span>{{ mismatch.deadline.strftime('%Y-%m-%d %H:%M') }}</span></td>
+          <td>{{ mismatch.status|replace('_',' ')|title }}</td>
+          <td>
+            {% if mismatch.status in ['pending', 'manager_rejected'] and mismatch.deadline > now() %}
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#resolveModal{{loop.index}}">
+              Resolve
+            </button>
+            {% else %}
+              <span class="text-muted">No action available</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5><i class="fas fa-exclamation-triangle"></i> Pending Mismatches</h5>
+  <!-- Resolution Modals -->
+  {% for mismatch in mismatches %}
+    {% if mismatch.status in ['pending', 'manager_rejected'] and mismatch.deadline > now() %}
+    <div class="modal fade" id="resolveModal{{loop.index}}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5>Resolve Mismatch - {{ mismatch.date }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{{ url_for('vendor.resolve_mismatch', mismatch_id=mismatch._id) }}">
+            <div class="modal-body">
+              <label class="form-label">Issue</label>
+              <p>{{ mismatch.mismatch_type|replace('_',' ')|title }}</p>
+              <label for="new_status" class="form-label">Corrected Status</label>
+              <select name="new_status" class="form-select" required>
+                <option value="">Select correct status...</option>
+                <option value="In office full day">In office full day</option>
+                <option value="Office half + work from home half">Office half + work from home half</option>
+                <option value="Office half + leave half">Office half + leave half</option>
+                <option value="Work from home full">Work from home full</option>
+                <option value="Leave">Leave</option>
+              </select>
+              <label for="comments" class="form-label">Comments</label>
+              <textarea name="comments" class="form-control" rows="3" placeholder="Explain your resolution..."></textarea>
             </div>
-            <div class="card-body">
-                {% if mismatches_by_date %}
-                    {% for date, mismatches in mismatches_by_date.items() %}
-                    <div class="mb-3">
-                        <h6>{{ date }}</h6>
-                        {% for mismatch in mismatches %}
-                        <div class="alert alert-warning">
-                            <strong>Issue:</strong> {{ mismatch.message }}<br>
-                            <strong>Expected:</strong> {{ mismatch.expected }}<br>
-                            <strong>Actual:</strong> {{ mismatch.actual }}
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i> No mismatches found. Great job!
-                    </div>
-                {% endif %}
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Submit Resolution</button>
             </div>
+          </form>
         </div>
+      </div>
     </div>
+    {% endif %}
+  {% endfor %}
+
+  {% else %}
+  <div>
+    <i class="fas fa-check-circle"></i> No mismatches found. Great job!
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

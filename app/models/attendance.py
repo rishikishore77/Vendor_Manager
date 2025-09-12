@@ -13,6 +13,7 @@ class Attendance:
         'Office half + work from home half',
         'Office half + leave half',
         'Work from home full',
+        'Work from home half + leave half',
         'Holiday',
         'Leave'
     ]
@@ -137,3 +138,176 @@ class Attendance:
     def find(query, sort=None):
         """Find attendance records matching query (optionally sorted)"""
         return Database.find(Attendance.COLLECTION, query, sort=sort)
+    
+    @classmethod
+    def mark_as_mismatch(cls, attendance_id, is_mismatch=True):
+        return Database.update_one(
+            cls.COLLECTION,
+            {"_id": ObjectId(attendance_id)},
+            {"$set": {"is_mismatch": is_mismatch, "updated_at": datetime.utcnow()}}
+        )
+    
+    @classmethod
+    def update_final_status(cls, user_id, date, final_status, mismatch_id=None):
+        update_data = {
+            "final_status": final_status,
+            "mismatch_resolved": True,
+            "updated_at": datetime.utcnow()
+        }
+        if mismatch_id:
+            update_data["mismatch_id"] = ObjectId(mismatch_id)
+        return Database.update_one(
+            cls.COLLECTION,
+            {"user_id": ObjectId(user_id), "date": date},
+            {"$set": update_data}
+        )
+    @classmethod
+    def find_by_month(cls, site_id, month_year):
+        start_date = f"{month_year}-01"
+        end_date = f"{month_year}-31"
+        return Database.find(
+            cls.COLLECTION,
+            {
+            "site_id": ObjectId(site_id),
+            "date": {"$gte": start_date, "$lte": end_date}
+            },
+            sort=[("date", 1)]
+        )    
+
+    @classmethod
+    def count_team_records(cls, manager_id):
+        from app.models.user import User
+        # Get all vendor user IDs under this manager
+        team_members = User.get_vendors_by_manager(manager_id)
+        user_ids = [str(m['_id']) for m in team_members]
+        if not user_ids:
+            return 0
+        collection = Database.get_collection(cls.COLLECTION)
+        # Count attendance records for these users
+        count = collection.count_documents({'user_id': {'$in': user_ids}})
+        return count
+
+    @staticmethod
+    def find_by_id(attendance_id):
+        """Find attendance record by its _id"""
+        if not isinstance(attendance_id, ObjectId):
+            attendance_id = ObjectId(attendance_id)
+        return Database.find_one(Attendance.COLLECTION, {'_id': attendance_id})
+    
+    @staticmethod
+    def update_one(filter_query, update_data):
+        """Update one attendance document matching filter_query with update_data"""
+        return Database.update_one(Attendance.COLLECTION, filter_query, update_data)
+    
+    @staticmethod
+    def save(record):
+        """Save/update the given attendance record dict in the DB"""
+        record_id = record.get('_id')
+        if not record_id:
+            # Optionally handle insert if no _id
+            return None
+        # Remove _id from updated fields to avoid errors
+        updated_record = {k: v for k, v in record.items() if k != '_id'}
+        result = Database.update_one(Attendance.COLLECTION, {'_id': record_id}, {'$set': updated_record})
+        return result
+
+
+
+    @classmethod
+    def get_month_attendance(cls, site_id, manager_id, month_year):
+        manager_obj_ids = []
+        if isinstance(manager_id, list):
+            for m_id in manager_id:
+                if isinstance(m_id, ObjectId):
+                    manager_obj_ids.append(m_id)
+                elif isinstance(m_id, str):
+                    manager_obj_ids.append(ObjectId(m_id))
+                else:
+                    raise TypeError(f"Invalid manager_id element type: {type(m_id)}")
+        else:
+            if isinstance(manager_id, (str, ObjectId)):
+                manager_obj_ids = [ObjectId(manager_id) if isinstance(manager_id, str) else manager_id]
+            else:
+                raise TypeError(f"Invalid manager_id type: {type(manager_id)}")
+
+        collection = Database.get_collection(cls.COLLECTION)
+
+        pipeline = [
+            {
+                '$match': {
+                    'site_id': ObjectId(site_id),
+                    'date': {'$regex': f'^{month_year}'}
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'users',
+                    'localField': 'user_id',
+                    'foreignField': '_id',
+                    'as': 'vendor_info'
+                }
+            },
+            {'$unwind': '$vendor_info'},
+            {
+                '$match': {
+                    'vendor_info.manager_id': {'$in': manager_obj_ids},
+                    'vendor_info.role': 'vendor'
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'vending_company',
+                    'localField': 'vendor_info.vendor_company_id',
+                    'foreignField': '_id',
+                    'as': 'vending_company_info'
+                }
+            },
+            {'$unwind': {'path': '$vending_company_info', 'preserveNullAndEmptyArrays': True}},
+            {
+                '$lookup': {
+                    'from': 'department',
+                    'localField': 'vendor_info.department_id',
+                    'foreignField': '_id',
+                    'as': 'department_info'
+                }
+            },
+            {'$unwind': {'path': '$department_info', 'preserveNullAndEmptyArrays': True}},
+            {
+                '$group': {
+                    '_id': '$user_id',
+                    'name': {'$first': '$vendor_info.name'},
+                    'email': {'$first': '$vendor_info.email'},
+                    'vendor_id': {'$first': '$user_id'},
+                    'department_name': {'$first': '$department_info.name'},
+                    'vending_company': {'$first': '$vending_company_info.name'},
+                    'total_working_days': {'$sum': 1},
+                    'in_office_days': {
+                        '$sum': {'$cond': [{'$eq': ['$status', 'In office full day']}, 1, 0]}
+                    },
+                    'leave_days': {
+                        '$sum': {'$cond': [{'$eq': ['$status', 'Leave']}, 1, 0]}
+                    },
+                    'leave_dates': {
+                        '$push': {
+                            '$cond': [{'$eq': ['$status', 'Leave']}, '$date', '$$REMOVE']
+                        }
+                    },
+                    'wfh_days': {
+                        '$sum': {'$cond': [{'$eq': ['$status', 'Work from home full']}, 1, 0]}
+                    },
+                    'wfh_dates': {
+                        '$push': {
+                            '$cond': [{'$eq': ['$status', 'Work from home full']}, '$date', '$$REMOVE']
+                        }
+                    },
+                    'comments': {
+                        '$push': {
+                            '$cond': [{'$ne': ['$comments', '']}, '$comments', '$$REMOVE']
+                        }
+                    }
+                }
+            }
+        ]
+
+        results = list(collection.aggregate(pipeline))
+        return results

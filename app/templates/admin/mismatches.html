@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Site Mismatches{% endblock %}
+
+{% block content %}
+<div>
+  <h2><i class="fas fa-exclamation-triangle"></i> Site-wide Mismatches</h2>
+  {% if mismatches %}
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Employee</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Deadline</th>
+          <th>Vendor Resolution</th>
+          <th>Manager Approval</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mismatch in mismatches %}
+        <tr>
+          <td>{{ mismatch.date }}</td>
+          <td>{{ mismatch.user_info.name if mismatch.user_info else 'Unknown' }}</td>
+            <td>
+            {% for reason in mismatch.mismatch_type %}
+                {{ reason }}<br>
+            {% endfor %}
+            </td>
+          <td>
+            <span class="badge bg-{% if mismatch.status == 'pending' %}danger
+                                    {% elif mismatch.status == 'vendor_updated' %}warning
+                                    {% elif mismatch.status == 'manager_approved' %}success
+                                    {% elif mismatch.status == 'manager_rejected' %}danger
+                                    {% else %}secondary{% endif %}">
+              {{ mismatch.status | replace('_', ' ') | title }}
+            </span>
+          </td>
+          <td>
+            {% if mismatch.deadline %}
+            <small class="{% if mismatch.deadline < now() %}text-danger{% elif (mismatch.deadline - now()).days <= 2 %}text-warning{% endif %}">
+              {{ mismatch.deadline.strftime('%Y-%m-%d %H:%M') }}
+            </small>
+            {% else %}
+            -
+            {% endif %}
+          </td>
+          <td>
+            {% if mismatch.vendor_resolution %}
+              <strong>Status:</strong> {{ mismatch.vendor_resolution.new_status }}<br>
+              <strong>Comments:</strong> {{ mismatch.vendor_resolution.comments }}
+            {% else %}
+              <em>Pending</em>
+            {% endif %}
+          </td>
+          <td>
+            {% if mismatch.manager_resolution %}
+              <strong>Decision:</strong> {{ mismatch.manager_resolution.action | title }}<br>
+              <strong>Comments:</strong> {{ mismatch.manager_resolution.comments }}
+            {% else %}
+              <em>Pending</em>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    <i class="fas fa-check-circle"></i> No mismatches found at this time.
+  </div>
+  {% endif %}
+  <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary mt-3">
+    <i class="fas fa-arrow-left"></i> Back to Dashboard
+  </a>
+</div>
+{% endblock %}

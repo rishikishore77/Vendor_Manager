@@ -1,5 +1,6 @@
 """Admin routes"""
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from io import BytesIO
+from flask import Blueprint, render_template, request, redirect, send_file, url_for, session, flash
 from app.models.user import User
 from app.models.department import Department
 from app.models.vending_company import VendingCompany
@@ -10,6 +11,18 @@ from app.models.holiday import Holiday
 from datetime import date, datetime, timedelta
 import logging
 import calendar
+from app.models.mismatch import MismatchManagement
+from app.models.monthly_cycle import MonthlyCycle
+from app.models.swipe_data import SwipeData
+from app.models.wfh_data import WFHData
+from app.models.leave_data import LeaveData
+from app.utils.mismatch_processor import MismatchProcessor
+from app.utils.data_upload_processor import DataUploadProcessor
+from app.utils.helpers import allowed_file
+import pandas as pd
+from dateutil.relativedelta import relativedelta
+import os
+from werkzeug.utils import secure_filename
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
@@ -28,33 +41,30 @@ def get_year_calendar(year):
 @login_required
 @role_required('admin')
 def dashboard():
-    """Admin dashboard"""
     site_id = session['site_id']
+    
+    # Get site statistics
+    site_stats = {
+        'total_vendors': len(User.get_all_by_site(site_id, 'vendor')),
+        'total_managers': len(User.get_all_by_site(site_id, 'manager')),
+    }
+    
+    # Get mismatch statistics
+    mismatch_stats = {
+        'total_mismatches': MismatchManagement.count_site_mismatches(site_id),
+        'pending_mismatches': MismatchManagement.count_site_mismatches(site_id, status='pending')
+    }
+    
+    months = [(datetime.utcnow() - relativedelta(months=i)).strftime('%Y-%m') for i in range(12)]
 
-    try:
-        site_stats = {
-            'total_vendors': len(User.get_all_by_site(site_id, 'vendor')),
-            'total_managers': len(User.get_all_by_site(site_id, 'manager')),
-            'monthly_attendance_count': 0  # Placeholder, implement as needed
-        }
-        return render_template(
-            'admin/dashboard.html',
-            site_stats=site_stats,
-            recent_attendance=[],
-            audit_statuses=[],
-            mismatch_stats=[]
-        )
-    except Exception as e:
-        logger.error(f"Admin dashboard error: {e}")
-        flash('Error loading dashboard', 'error')
-        return render_template(
-            'admin/dashboard.html',
-            site_stats={},
-            recent_attendance=[],
-            audit_statuses=[],
-            mismatch_stats=[]
-        )
-
+    # Get recent mismatches
+    recent_mismatches = MismatchManagement.get_site_mismatches(site_id, limit=10)
+    
+    return render_template('admin/dashboard.html', 
+                         site_stats=site_stats,
+                         mismatch_stats=mismatch_stats,
+                         recent_mismatches=recent_mismatches,
+                         months=months )
 
 @admin_bp.route('/users')
 @login_required
@@ -408,3 +418,126 @@ def deactivate_user():
     except Exception as e:
         flash(f'Error deactivating user: {e}', 'error')
     return redirect(url_for('admin.users'))
+
+@admin_bp.route('/monthly-cycles')
+@login_required
+@role_required('admin')
+def monthly_cycles():
+    site_id = session['site_id']
+    cycles = MonthlyCycle.get_all(site_id)
+    return render_template('admin/monthly_cycles.html', cycles=cycles)
+
+@admin_bp.route('/upload-monthly-data/<month_year>', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def upload_monthly_data(month_year):
+    if request.method == 'POST':
+        data_type = request.form.get('data_type') # swipe/wfh/leave
+        file = request.files['file']
+        site_id = session['site_id']
+        if file and allowed_file(file.filename):
+            result = DataUploadProcessor.process_upload(file, data_type, month_year, site_id)
+            if result:
+                flash(f'{data_type.title()} data uploaded successfully!', 'success')
+                return redirect(url_for('admin.monthly_cycles'))
+            else:
+                flash(f'Error uploading {data_type} data', 'error')
+    return render_template('admin/upload_monthly_data.html', month_year=month_year)
+
+@admin_bp.route('/process-mismatches/<month_year>', methods=['POST'])
+@login_required
+@role_required('admin')
+def process_mismatches(month_year):
+    site_id = session['site_id']
+    mismatch_count = MismatchProcessor.detect_and_create_mismatches(site_id, month_year)
+    flash(f'{mismatch_count} mismatches detected and created', 'info')
+    return redirect(url_for('admin.monthly_cycles'))
+
+@admin_bp.route('/upload-with-month-selector')
+@login_required
+@role_required('admin')
+def upload_with_month_selector():
+    month_year = request.args.get('month_year')
+    if month_year:
+        return redirect(url_for('admin.upload_monthly_data', month_year=month_year))
+    else:
+        flash('Please select a month', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+@admin_bp.route('/process-mismatches-with-month', methods=['POST'])
+@login_required
+@role_required('admin')
+def process_mismatches_with_month():
+    month_year = request.form.get('month_year')
+    site_id = session.get('site_id')
+    
+    if month_year and site_id:
+        count = MismatchProcessor.detect_and_create_mismatches(site_id, month_year)
+        flash(f'{count} mismatches detected and created for {month_year}', 'info')
+    else:
+        flash('Please select a month', 'error')
+    
+    return redirect(url_for('admin.dashboard'))
+
+@admin_bp.route('/mismatches')
+@login_required
+@role_required('admin')
+def view_mismatches():
+    site_id = session.get('site_id')
+    mismatches = []
+    if site_id:
+        mismatches = MismatchManagement.get_site_mismatches(site_id)
+        for mismatch in mismatches:
+            user = User.find_by_id(mismatch['user_id'])
+            mismatch['user_info'] = user
+    return render_template('admin/mismatches.html', mismatches=mismatches)
+
+@admin_bp.route('/vendor-timesheets')
+@login_required
+@role_required('admin')
+def vendor_timesheets():
+    from app.models.timesheet import Timesheet
+    from app.models.user import User
+    from app.models.vending_company import VendingCompany
+
+    site_id = session['site_id']
+    vending_company_id = request.args.get('vending_company_id')
+    month_year = request.args.get('month_year')
+
+    filters = {
+        'vending_company_id': vending_company_id,
+        'month_year': month_year,
+    }
+    
+    timesheets = Timesheet.get_timesheets(filters)
+    
+    vendor_ids = [ts['vendor_id'] for ts in timesheets]
+    vendors = User.find({'_id': {'$in': vendor_ids}})
+    vendor_map = {v['_id']: v for v in vendors}
+    
+    data_for_export = []
+    for ts in timesheets:
+        vendor = vendor_map.get(ts['vendor_id'])
+        data_for_export.append({
+            'Vendor Name': vendor.get('name') if vendor else '',
+            'Month-Year': ts['month_year'],
+            'Worked Days': ts['worked_days'],
+            'Mismatch Leave Days': ts['mismatch_leave_days'],
+            'Offset Days': ts['offset_days'],
+            'Total Days (with offset)': ts['worked_days'] + ts['offset_days']
+        })
+
+    if 'export' in request.args:
+        df = pd.DataFrame(data_for_export)
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Timesheets')
+        output.seek(0)
+        return send_file(output, attachment_filename='vendor_timesheets.xlsx', as_attachment=True)
+
+    vending_companies = VendingCompany.get_all(site_id)
+    
+    return render_template('admin/vendor_timesheets.html',
+                           timesheets=data_for_export,
+                           vending_companies=vending_companies,
+                           filters=filters)

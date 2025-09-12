@@ -36,7 +36,11 @@
                                 {% set date_str = "%04d-%02d-%02d"|format(calendar_data.year, calendar_data.month, day) %}
                                 {% set is_holiday = holidays.get(date_str) %}
                                 {% set is_weekend = weekends and (date_str in weekends) %}
-                                <td class="p-2{% if is_holiday %} calendar-day holiday{% endif %}{% if is_weekend %} calendar-day weekend{% endif %}" style="height: 100px; width: 14.28%; vertical-align: top;">
+                                <td class="p-2
+                                    {% if is_holiday %} calendar-day holiday{% endif %}
+                                    {% if is_weekend %} calendar-day weekend{% endif %}
+                                    {% if date_str == current_date %} calendar-day today{% endif %}"
+                                    style="height: 100px; width: 14.28%; vertical-align: top;">
                                     {% if day != 0 %}
                                         <div class="fw-bold">{{ day }}</div>
                                         {% if is_holiday %}
@@ -74,11 +78,18 @@
                 <span class="badge bg-success me-2">Approved</span>
                 <span class="badge bg-warning me-2">Pending</span>
                 <span class="badge bg-danger me-2">Rejected</span>
-                <span class="badge bg-secondary me-2">No Entry</span>
                 <span class="badge bg-light border text-danger me-2"><i class="fas fa-gift"></i> Holiday</span>
                 <span class="badge bg-light border text-warning me-2">Weekend</span>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.calendar-day.today {
+    border: 2px solid #007bff;
+    background-color: #cce5ff;
+    border-radius: 4px;
+}
+</style>
 {% endblock %}

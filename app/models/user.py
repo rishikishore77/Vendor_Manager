@@ -140,3 +140,22 @@ class User:
             User.find({'name': {'$regex': 'John', '$options': 'i'}})
         """
         return Database.find(User.COLLECTION, query)
+    
+    # @classmethod
+    # def get_vendors_by_manager(cls, manager_id):
+    #     return Database.find(
+    #         cls.COLLECTION,
+    #         {"manager_id": ObjectId(manager_id), "role": "vendor"},
+    #         sort=[("name", 1)]
+    #     )
+    @classmethod
+    def find_by_employee_code(cls, employee_code):
+        return Database.find_one(
+            cls.COLLECTION,
+            {"employee_code": employee_code}
+    )
+
+    @staticmethod
+    def find_one(query):
+        """Find a single user document matching a MongoDB query."""
+        return Database.find_one(User.COLLECTION, query)

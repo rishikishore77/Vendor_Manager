@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Monthly Attendance Summary Report{% endblock %}
+
+{% block content %}
+<h2>Monthly Attendance Summary Report</h2>
+
+<form method="GET" action="{{ url_for('manager.monthly_summary_report') }}" class="row gx-2 gy-1 align-items-end mb-3">
+  <div class="col-md-3">
+    <label for="name" class="form-label">Vendor Name</label>
+    <input id="name" name="name" type="text" class="form-control" value="{{ filters.name }}">
+  </div>
+  <div class="col-md-3">
+    <label for="vending_company" class="form-label">Vending Company</label>
+    <select id="vending_company" name="vending_company" class="form-select">
+      <option value="">All Companies</option>
+      {% for comp in vending_companies %}
+      <option value="{{ comp._id }}" {% if filters.vending_company == comp._id|string %}selected{% endif %}>{{ comp.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label for="department" class="form-label">Department</label>
+    <select id="department" name="department" class="form-select">
+      <option value="">All Departments</option>
+      {% for dept in departments %}
+      <option value="{{ dept._id }}" {% if filters.department == dept._id|string %}selected{% endif %}>{{ dept.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label for="month_year" class="form-label">Month</label>
+    <input id="month_year" name="month_year" type="month" class="form-control" value="{{ filters.month_year }}">
+  </div>
+
+  <div class="col-12 mt-2">
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+</form>
+
+<table class="table table-bordered table-hover table-striped">
+  <thead class="table-light">
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Vendor ID</th>
+      <th>Department</th>
+      <th>Company</th>
+      <th>Total Working Days</th>
+      <th>In Office Days</th>
+      <th>Leave Days</th>
+      <th>Leave Dates</th>
+      <th>WFH Dates</th>
+      <th>Comments</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in reports %}
+    <tr>
+      <td>{{ r.name }}</td>
+      <td>{{ r.email }}</td>
+      <td>{{ r.vendor_id }}</td>
+      <td>{{ r.department_name or '-' }}</td>
+      <td>{{ r.vending_company or '-' }}</td>
+      <td>{{ r.total_working_days }}</td>
+      <td>{{ r.in_office_days }}</td>
+      <td>{{ r.leave_days }}</td>
+      <td>{{ r.leave_dates | join(', ') }}</td>
+      <td>{{ r.wfh_dates | join(', ') }}</td>
+      <td>
+        {% if r.comments %}
+          {% for comment in r.comments %}
+            <div>{{ comment }}</div>
+          {% endfor %}
+        {% else %}
+          <span class="text-muted">No comments</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="11" class="text-center">No records found for selected filters.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
