@@ -95,31 +95,25 @@ def calendar_view():
 
         calendar_data = get_month_calendar(year, month)
 
-        # Fetch holidays for the current month
+        # Fetch holidays for the current month (all holidays for the site that match the month)
         holidays = [
             h for h in Holiday.get_all(site_id)
             if h['date'].startswith(f"{year}-") and int(h['date'][5:7]) == month
         ]
         holidays_dict = {h['date']: h['name'] for h in holidays}
 
-        # Get all weekends for this month for coloring
+        # (Optional: get all weekends for this month for coloring)
         weekends = set()
-        d = datetime(year, month, 1)
-        last_day = calendar.monthrange(year, month)[1]
-        for day_num in range(1, last_day+1):
-            d = d.replace(day=day_num)
-            if d.weekday() in [5, 6]:  # Saturday=5, Sunday=6
+        d = date(year, month, 1)
+        while d.month == month:
+            if d.weekday() in [5, 6]:
                 weekends.add(d.strftime('%Y-%m-%d'))
+            d = d.replace(day=d.day + 1) if d.day < (calendar.monthrange(year, month)[1]) else d.replace(month=month+1, day=1)
 
-        # Calculate previous and next month/year for navigation buttons
         prev_month = month - 1 if month > 1 else 12
         prev_year = year if month > 1 else year - 1
         next_month = month + 1 if month < 12 else 1
         next_year = year if month < 12 else year + 1
-
-        # Provide a range of years for the dropdown (e.g., last 5 years to next 5 years)
-        current_year = datetime.now().year
-        year_options = list(range(current_year - 5, current_year + 6))
 
         return render_template(
             'vendor/calendar.html',
@@ -132,34 +126,24 @@ def calendar_view():
             next_month=next_month,
             next_year=next_year,
             year=year,
-            month=month,
-            year_options=year_options
+            month=month
         )
 
     except Exception as e:
         logger.error(f"Calendar view error: {e}")
         flash('Error loading calendar', 'error')
-        now = datetime.now()
-        # Fix previous and next month/year for fallback
-        prev_month = now.month - 1 if now.month > 1 else 12
-        prev_year = now.year if now.month > 1 else now.year - 1
-        next_month = now.month + 1 if now.month < 12 else 1
-        next_year = now.year if now.month < 12 else now.year + 1
-        year_options = list(range(now.year - 5, now.year + 6))
-
         return render_template(
             'vendor/calendar.html',
-            calendar_data=get_month_calendar(now.year, now.month),
+            calendar_data=get_month_calendar(datetime.now().year, datetime.now().month),
             attendance_map={},
             holidays={},
             weekends=set(),
-            prev_month=prev_month,
-            prev_year=prev_year,
-            next_month=next_month,
-            next_year=next_year,
-            year=now.year,
-            month=now.month,
-            year_options=year_options
+            prev_month=datetime.now().month-1,
+            prev_year=datetime.now().year,
+            next_month=datetime.now().month+1,
+            next_year=datetime.now().year,
+            year=datetime.now().year,
+            month=datetime.now().month
         )
 
 @vendor_bp.route('/history')
