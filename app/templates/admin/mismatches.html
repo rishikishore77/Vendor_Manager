@@ -12,7 +12,8 @@
         <tr>
           <th>Date</th>
           <th>Employee</th>
-          <th>Type</th>
+          <th>Attendance</th>
+          <th>Mismatch</th>
           <th>Status</th>
           <th>Deadline</th>
           <th>Vendor Resolution</th>
@@ -24,6 +25,9 @@
         <tr>
           <td>{{ mismatch.date }}</td>
           <td>{{ mismatch.user_info.name if mismatch.user_info else 'Unknown' }}</td>
+          <td>
+            {{ mismatch.original_status if mismatch.original_status else 'Unknown' }}  <!-- Display attendance or dash -->
+          </td>         
             <td>
             {% for reason in mismatch.mismatch_type %}
                 {{ reason }}<br>
@@ -48,17 +52,17 @@
             {% endif %}
           </td>
           <td>
-            {% if mismatch.vendor_resolution %}
-              <strong>Status:</strong> {{ mismatch.vendor_resolution.new_status }}<br>
-              <strong>Comments:</strong> {{ mismatch.vendor_resolution.comments }}
+            {% if mismatch.vendor_status %}
+              <strong>Status:</strong> {{ mismatch.vendor_status }}<br>
+              <strong>Comments:</strong> {{ mismatch.vendor_reason }}
             {% else %}
               <em>Pending</em>
             {% endif %}
           </td>
           <td>
-            {% if mismatch.manager_resolution %}
-              <strong>Decision:</strong> {{ mismatch.manager_resolution.action | title }}<br>
-              <strong>Comments:</strong> {{ mismatch.manager_resolution.comments }}
+            {% if mismatch.status in ['manager_approved', 'manager_rejected'] %}
+              <strong>Decision:</strong> {{ mismatch.status.split('_')[1] | title }}<br>
+              <strong>Comments:</strong> {{ mismatch.manager_comments}}
             {% else %}
               <em>Pending</em>
             {% endif %}

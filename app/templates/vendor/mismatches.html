@@ -24,7 +24,11 @@
         <tr>
           <td>{{ mismatch.date }}</td>
           <td>{{ mismatch.original_status }}</td>
-          <td>{{ mismatch.mismatch_type|replace('_',' ')|title }}</td>
+          <td>
+            {% for item in mismatch.mismatch_type %}
+              {{ item | replace('_', ' ') }}<br>
+            {% endfor %}
+          </td>
           <td><span>{{ mismatch.deadline.strftime('%Y-%m-%d %H:%M') }}</span></td>
           <td>{{ mismatch.status|replace('_',' ')|title }}</td>
           <td>

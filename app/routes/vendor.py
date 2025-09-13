@@ -59,7 +59,7 @@ def dashboard():
 
         # Get mismatch stats for vendor
         mismatch_count = MismatchManagement.count_user_mismatches(user_id)
-        urgent_mismatch_count = MismatchManagement.count_user_mismatches(user_id, status='pending')
+        urgent_mismatch_count = MismatchManagement.count_user_mismatches(user_id, status='pending') + MismatchManagement.count_user_mismatches(user_id, status='manager_rejected')
 
         stats = {
             'mismatch_count': mismatch_count,

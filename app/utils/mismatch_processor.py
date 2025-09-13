@@ -9,6 +9,7 @@ from app.models.wfh_data import WFHData
 from app.models.leave_data import LeaveData
 from app.models.system_config import SystemConfig
 from app.utils.database import Database
+from app.enums.mismatch_types import MismatchType
 
 class MismatchProcessor:
     """Process and detect mismatches between attendance and uploaded data"""
@@ -48,7 +49,11 @@ class MismatchProcessor:
                     'date': mismatch['date']
                 })
 
-                if existing_mismatch:
+                if existing_mismatch and existing_mismatch.get('mismatch_type') == mismatch.get('mismatch_type'):
+                    # Do not update if the same mismatch already exists
+                    pass
+                elif existing_mismatch:
+                    # Update existing mismatch
                     MismatchManagement.update_one(
                         {'_id': existing_mismatch['_id']},
                         {'$set': mismatch}
@@ -86,7 +91,7 @@ class MismatchProcessor:
 
         # Rule 1: Pending status always checked
         if status == "Pending":
-            mismatch_types.append("pending_status")
+            mismatch_types.append(MismatchType.PENDING_STATUS.value)
             expected_data_sequence.append({})
             actual_data_sequence.append({})
 
@@ -94,11 +99,11 @@ class MismatchProcessor:
         elif status == "In office full day" and swipe_uploaded:
             swipe_data = SwipeData.find_by_user_date(user_id, date)
             if not swipe_data:
-                mismatch_types.append("office_no_swipe")
+                mismatch_types.append(MismatchType.NO_SWIPE.value)
                 expected_data_sequence.append({"swipe_hours": min_office_hours})
                 actual_data_sequence.append({"swipe_hours": 0})
             elif swipe_data.get('total_hours', 0) < min_office_hours:
-                mismatch_types.append("office_short_swipe")
+                mismatch_types.append(MismatchType.SHORT_SWIPE.value)
                 expected_data_sequence.append({"swipe_hours": min_office_hours})
                 actual_data_sequence.append({"swipe_hours": swipe_data.get('total_hours', 0)})
 
@@ -109,16 +114,16 @@ class MismatchProcessor:
 
             if swipe_uploaded:
                 if not swipe_data:
-                    mismatch_types.append("half_office_no_swipe")
+                    mismatch_types.append(MismatchType.NO_SWIPE.value)
                     expected_data_sequence.append({"swipe_hours": min_half_office_hours})
                     actual_data_sequence.append({"swipe_hours": 0})
                 elif swipe_data.get('total_hours', 0) < min_half_office_hours:
-                    mismatch_types.append("half_office_short_swipe")
+                    mismatch_types.append(MismatchType.SHORT_HALF_SWIPE.value)
                     expected_data_sequence.append({"swipe_hours": min_half_office_hours})
                     actual_data_sequence.append({"swipe_hours": swipe_data.get('total_hours', 0)})
 
             if wfh_uploaded and not wfh_data:
-                mismatch_types.append("half_wfh_no_wfh")
+                mismatch_types.append(MismatchType.NO_WFH.value)
                 expected_data_sequence.append({"wfh_required": True})
                 actual_data_sequence.append({"wfh_present": False})
 
@@ -129,22 +134,22 @@ class MismatchProcessor:
 
             if swipe_uploaded:
                 if not swipe_data:
-                    mismatch_types.append("half_office_no_swipe")
+                    mismatch_types.append(MismatchType.NO_SWIPE.value)
                     expected_data_sequence.append({"swipe_hours": min_half_office_hours})
                     actual_data_sequence.append({"swipe_hours": 0})
                 elif swipe_data.get('total_hours', 0) < min_half_office_hours:
-                    mismatch_types.append("half_office_short_swipe")
+                    mismatch_types.append(MismatchType.SHORT_HALF_SWIPE.value)
                     expected_data_sequence.append({"swipe_hours": min_half_office_hours})
                     actual_data_sequence.append({"swipe_hours": swipe_data.get('total_hours', 0)})
 
             if leave_uploaded:
                 leave_hours = cls.total_leave_hours_in_window(user_id, date)
                 if leave_hours < min_half_leave_hours and leave_hours > 0:
-                    mismatch_types.append("half_leave_short_leave")
+                    mismatch_types.append(MismatchType.SHORT_HALF_LEAVE.value)
                     expected_data_sequence.append({"leave_hours_6AM_to_7PM": 3.0})
                     actual_data_sequence.append({"leave_hours_present_6AM_to_7PM": leave_hours})
                 elif leave_hours == 0:
-                    mismatch_types.append("half_leave_no_leave")
+                    mismatch_types.append(MismatchType.NO_LEAVE.value)
                     expected_data_sequence.append({"leave_hours_6AM_to_7PM": 3.0})
                     actual_data_sequence.append({"leave_hours_present_6AM_to_7PM": 0})
 
@@ -152,7 +157,7 @@ class MismatchProcessor:
         elif status == "Work from home full":
             wfh_data = WFHData.find_by_user_date(user_id, date) if wfh_uploaded else None
             if wfh_uploaded and not wfh_data:
-                mismatch_types.append("wfh_no_wfh")
+                mismatch_types.append(MismatchType.NO_WFH.value)
                 expected_data_sequence.append({"wfh_required": True})
                 actual_data_sequence.append({"wfh_present": False})
 
@@ -162,11 +167,11 @@ class MismatchProcessor:
             if leave_uploaded:
                 leave_hours = cls.total_leave_hours_in_window(user_id, date)
                 if leave_hours < min_full_leave_hours and leave_hours > 0:
-                    mismatch_types.append("full_leave_short_leave")
+                    mismatch_types.append(MismatchType.SHORT_LEAVE.value)
                     expected_data_sequence.append({"leave_hours_6AM_to_7PM": 6.0})
                     actual_data_sequence.append({"leave_hours_present_6AM_to_7PM": leave_hours})
                 elif leave_hours == 0:
-                    mismatch_types.append("half_leave_no_leave")
+                    mismatch_types.append(MismatchType.NO_LEAVE.value)
                     expected_data_sequence.append({"leave_hours_6AM_to_7PM": 6.0})
                     actual_data_sequence.append({"leave_hours_present_6AM_to_7PM": 0})
 
@@ -175,18 +180,18 @@ class MismatchProcessor:
             wfh_data = WFHData.find_by_user_date(user_id, date) if wfh_uploaded else None
             leave_data = LeaveData.find_by_user_date(user_id, date) if leave_uploaded else None
             if wfh_uploaded and not wfh_data:
-                mismatch_types.append("wfh_no_wfh")
+                mismatch_types.append(MismatchType.NO_WFH.value)
                 expected_data_sequence.append({"wfh_required": True})
                 actual_data_sequence.append({"wfh_present": False})
 
             if leave_uploaded:
                 leave_hours = cls.total_leave_hours_in_window(user_id, date)
                 if leave_hours < min_half_leave_hours and leave_hours > 0:
-                    mismatch_types.append("half_leave_short_leave")
+                    mismatch_types.append(MismatchType.SHORT_HALF_LEAVE.value)
                     expected_data_sequence.append({"leave_hours_6AM_to_7PM": 3.0})
                     actual_data_sequence.append({"leave_hours_present_6AM_to_7PM": leave_hours})
                 elif leave_hours == 0:
-                    mismatch_types.append("half_leave_no_leave")
+                    mismatch_types.append(MismatchType.NO_LEAVE.value)
                     expected_data_sequence.append({"leave_hours_6AM_to_7PM": 3.0})
                     actual_data_sequence.append({"leave_hours_present_6AM_to_7PM": 0})
 
