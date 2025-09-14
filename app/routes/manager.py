@@ -32,8 +32,10 @@ def dashboard():
 
     pending_approvals_query = {
         'user_id': {'$in': vendor_ids},
-        'approval_status': 'Pending'
+        'approval_status': 'Pending',
+        'status': {'$ne': 'Pending'}
     }
+
     if status_filter:
         pending_approvals_query['status'] = status_filter
     if start_date and end_date:
