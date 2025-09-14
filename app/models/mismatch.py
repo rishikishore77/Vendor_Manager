@@ -289,6 +289,16 @@ class MismatchManagement:
         if manager_comments is not None:
             update_data['manager_comments'] = manager_comments
         return Database.update_one(cls.COLLECTION, {"_id": ObjectId(mismatch_id)}, {"$set": update_data})
+    
+    @classmethod
+    def find_by_user_and_month(cls, user_id, month_year):
+        """Get all mismatches for a user in a specific month"""
+        query = {
+            "user_id": ObjectId(user_id),
+            "month_year": month_year
+        }
+        return Database.find(cls.COLLECTION, query, sort=[("date", 1)])
+
 
 
 

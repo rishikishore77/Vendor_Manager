@@ -1,0 +1,324 @@
+{# dashboard.html #}
+{% extends "base.html" %}
+{% block title %}Vendor Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-tachometer-alt"></i> Vendor Dashboard</h2>
+            <p class="text-muted">Welcome, {{ session.name }}!</p>
+        </div>
+    </div>
+
+    <!-- Allowed attendance marking date range info -->
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle"></i>
+        You can mark or update attendance from <strong>{{ allowed_range.start_date }}</strong>
+        up to <strong>{{ allowed_range.end_date }}</strong>.
+    </div>
+
+    <!-- Timesheet Lock Alert -->
+    {% if timesheet_locked_months %}
+    <div class="alert alert-warning">
+        <i class="fas fa-lock"></i>
+        <strong>Notice:</strong> Timesheets have been generated for: {{ timesheet_locked_months|join(', ') }}. 
+        Any attendance changes for these months will be recorded as offsets in future timesheets.
+    </div>
+    {% endif %}
+
+    <!-- Urgent Mismatches Alert -->
+    {% if stats.urgent_mismatch_count and stats.urgent_mismatch_count > 0 %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i> 
+        <strong>Urgent!</strong> You have {{ stats.urgent_mismatch_count }} mismatch(es) with deadlines approaching.
+        <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-sm btn-danger ms-2">
+            <i class="fas fa-arrow-right"></i> Resolve Now
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Today's Status -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-clock"></i> Today's Status ({{ today }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if today_attendance %}
+                        <div class="alert alert-{{ 'success' if today_attendance.approval_status == 'Approved' else 'warning' if today_attendance.approval_status == 'Pending' else 'danger' }}">
+                            <strong>Status:</strong> {{ today_attendance.status }}<br>
+                            <strong>Approval:</strong> {{ today_attendance.approval_status }}
+                            {% if today_attendance.rejection_reason %}
+                                <br><strong>Reason:</strong> {{ today_attendance.rejection_reason }}
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        {% if is_today_working %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> No attendance marked for today
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Today is a holiday/weekend
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                    <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#attendanceModal">
+                        <i class="fas fa-check"></i> Mark Attendance
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Summary -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-chart-pie"></i> This Month Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-success">{{ monthly_summary.present or 0 }}</h4>
+                            <small>Present</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info">{{ monthly_summary.wfh or 0 }}</h4>
+                            <small>WFH</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning">{{ monthly_summary.leave or 0 }}</h4>
+                            <small>Leave</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h5 class="text-success">{{ monthly_summary.approved or 0 }}</h5>
+                            <small>Approved</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-warning">{{ monthly_summary.pending or 0 }}</h5>
+                            <small>Pending</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-danger">{{ monthly_summary.rejected or 0 }}</h5>
+                            <small>Rejected</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <a href="{{ url_for('vendor.calendar_view') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-calendar"></i><br>View Calendar
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#futureLeaveModal">
+                                <i class="fas fa-plane"></i><br>Mark Future Leave
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('vendor.history') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-history"></i><br>View History
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-outline-warning w-100 mb-2">
+                                <i class="fas fa-exclamation-triangle"></i><br>Mismatches ({{ stats.mismatch_count or 0 }})
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Modal -->
+    <div class="modal fade" id="attendanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mark Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="dateInput" class="form-label">Date</label>
+                            <input id="dateInput" type="date" name="date" class="form-control" required
+                                min="{{ allowed_range.start_date }}" max="{{ allowed_range.end_date }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select" required>
+                                <option value="">Select Status</option>
+                                <option value="In office full day">In office full day (8 hours)</option>
+                                <option value="Office half + work from home half">Office half + work from home half (8 hours)</option>
+                                <option value="Office half + leave half">Office half + leave half (4 hours)</option>
+                                <option value="Work from home full">Work from home full (8 hours)</option>
+                                <option value="Leave">Leave (0 hours)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Comments</label>
+                            <textarea name="comments" class="form-control" rows="3" placeholder="Optional comments..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle"></i> Hours will be automatically calculated based on your status selection.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Mark Attendance</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Future Leave Modal -->
+    <div class="modal fade" id="futureLeaveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mark Future Leave</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="date" class="form-control" required min="{{ today }}">
+                        </div>
+
+                        <input type="hidden" name="status" value="Leave">
+
+                        <div class="mb-3">
+                            <label class="form-label">Reason</label>
+                            <textarea name="comments" class="form-control" rows="3" placeholder="Reason for leave..." required></textarea>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <small><i class="fas fa-exclamation-triangle"></i> Leave will be recorded as 0 work hours for timesheet calculations.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Mark Leave</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const vendorHolidays = {{ holidays | tojson | safe }};
+
+    // Attendance modal date input
+    const attendanceDateInput = document.getElementById('dateInput');
+
+    // Future Leave modal date input (assuming name="date" inside #futureLeaveModal)
+    const futureLeaveDateInput = document.querySelector('#futureLeaveModal input[name="date"]');
+
+    function isWeekend(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        return day === 0 || day === 6;
+    }
+
+    function showInvalidDateAlert() {
+        alert('Selected date is invalid (holiday or weekend). Please choose another date.');
+    }
+
+    function isInvalidDate(dateStr) {
+        return vendorHolidays.includes(dateStr) || isWeekend(dateStr);
+    }
+
+    function clearInput(input) {
+        if(input) input.value = '';
+    }
+
+    // Validate Attendance date input on modal show and input
+    if (attendanceDateInput) {
+        const attendanceModal = document.getElementById('attendanceModal');
+        attendanceModal.addEventListener('show.bs.modal', function () {
+            const currentVal = attendanceDateInput.value;
+            if (currentVal && isInvalidDate(currentVal)) {
+                showInvalidDateAlert();
+                clearInput(attendanceDateInput);
+            }
+        });
+
+        attendanceDateInput.addEventListener('input', function () {
+            const selectedDate = this.value;
+            if (!selectedDate) return;
+
+            if (isInvalidDate(selectedDate)) {
+                showInvalidDateAlert();
+                clearInput(attendanceDateInput);
+            }
+        });
+    }
+
+    // Validate Future Leave date input on input
+    if (futureLeaveDateInput) {
+        futureLeaveDateInput.addEventListener('input', function () {
+            const selectedDate = this.value;
+            if (!selectedDate) return;
+
+            if (isInvalidDate(selectedDate)) {
+                showInvalidDateAlert();
+                clearInput(futureLeaveDateInput);
+            }
+        });
+    }
+})();
+</script>
+
+<style>
+/* Custom styles for vendor dashboard */
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-outline-warning:hover,
+.btn-outline-secondary:hover,
+.btn-outline-dark:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease-in-out;
+}
+
+.performance-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}

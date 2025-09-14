@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}My Timesheets{% endblock %}
+{% block content %}
+<h2>My Timesheets</h2>
+
+<form method="GET" class="row gy-2 gx-2 align-items-end mb-3">
+    <div class="col-md-6">
+        <label for="month_year" class="form-label">Month</label>
+        <input id="month_year" name="month_year" type="month" class="form-control" value="{{ filters.month_year }}">
+    </div>
+    <div class="col-md-6">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+</form>
+
+<div class="mb-3">
+    <a href="{{ url_for('vendor.my_timesheets', export='true', month_year=filters.month_year) }}" 
+       class="btn btn-success">
+        <i class="fas fa-file-excel"></i> Export My Timesheets
+    </a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Month</th>
+                <th>Work Hours</th>
+                <th>Offset Hours</th>
+                <th>Leave Days</th>
+                <th>Total Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ts in timesheets %}
+            <tr>
+                <td>{{ ts.month_year }}</td>
+                <td>{{ ts.total_work_hours }}</td>
+                <td>{{ ts.total_offset_hours }}</td>
+                <td>{{ ts.mismatch_leave_days }}</td>
+                <td><strong>{{ ts.total_hours_with_offset }}</strong></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">No timesheet records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

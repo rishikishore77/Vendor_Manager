@@ -1,40 +1,56 @@
 {% extends "base.html" %}
 {% block title %}Vendor Dashboard{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid py-4">
+    <div class="row mb-3">
         <div class="col-12">
             <h2><i class="fas fa-tachometer-alt"></i> Vendor Dashboard</h2>
-            <p class="text-muted">Welcome, {{ session.name }}!</p>
+            <p class="text-muted">Welcome, {{ session.name }}</p>
         </div>
     </div>
 
-    <!-- Allowed attendance marking date range info -->
-    <div class="alert alert-info mt-3">
-        You can mark or update attendance from <strong>{{ allowed_range.start_date }}</strong>
-        up to <strong>{{ allowed_range.end_date }}</strong>.
-    </div>
-
-    <!-- Urgent Mismatches Alert -->
-    {% if stats.urgent_mismatch_count and stats.urgent_mismatch_count > 0 %}
-    <div class="alert alert-danger">
-        <i class="fas fa-exclamation-triangle"></i> 
-        <strong>Urgent!</strong> You have {{ stats.urgent_mismatch_count }} mismatch(es) with deadlines approaching.
-        <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-sm btn-danger ms-2">
-            <i class="fas fa-arrow-right"></i> Resolve Now
-        </a>
-    </div>
-    {% endif %}
-
-    <div class="row">
-        <!-- Today's Status -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5><i class="fas fa-clock"></i> Today's Status ({{ today }})</h5>
+    <!-- Alerts -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <div>You can mark or update attendance from <strong>{{ allowed_range.start_date }}</strong> to <strong>{{ allowed_range.end_date }}</strong>.</div>
+            </div>
+        </div>
+        {% if timesheet_locked_month %}
+        <div class="col-12">
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fas fa-lock me-2"></i>
+                <div>
+                    <strong>Notice:</strong> Timesheets have been generated for: {{ timesheet_locked_month }}.
+                    Any changes to those months will be recorded as offsets and reflected in next month’s timesheet.
                 </div>
-                <div class="card-body">
+            </div>
+        </div>
+        {% endif %}
+        {% if stats.urgent_mismatch_count and stats.urgent_mismatch_count > 0 %}
+        <div class="col-12">
+            <div class="alert alert-danger d-flex align-items-center justify-content-between" role="alert">
+                <span>
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Urgent:</strong> You have {{ stats.urgent_mismatch_count }} pending mismatches.
+                </span>
+                <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-sm btn-danger">Resolve Now <i class="fas fa-arrow-right ms-1"></i></a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Cards (Only Today and Monthly Summary) -->
+    <div class="row gx-4 gy-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Today's Status - {{ today }}</h5>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
                     {% if today_attendance %}
+                    <div>
                         <div class="alert alert-{{ 'success' if today_attendance.approval_status == 'Approved' else 'warning' if today_attendance.approval_status == 'Pending' else 'danger' }}">
                             <strong>Status:</strong> {{ today_attendance.status }}<br>
                             <strong>Approval:</strong> {{ today_attendance.approval_status }}
@@ -42,60 +58,57 @@
                                 <br><strong>Reason:</strong> {{ today_attendance.rejection_reason }}
                             {% endif %}
                         </div>
+                    </div>
                     {% else %}
                         {% if is_today_working %}
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle"></i> No attendance marked for today
-                            </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>No attendance marked for today.
+                        </div>
                         {% else %}
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> Today is a holiday/weekend
-                            </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>Today is a holiday/weekend.
+                        </div>
                         {% endif %}
                     {% endif %}
-
-                    {% if is_today_working %}
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#attendanceModal">
-                        <i class="fas fa-check"></i> Mark Attendance
+                    <button class="btn btn-primary w-100 mt-auto" data-bs-toggle="modal" data-bs-target="#attendanceModal">
+                        <i class="fas fa-check me-2"></i>Mark Attendance
                     </button>
-                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Monthly Summary -->
         <div class="col-md-6">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header bg-success text-white">
-                    <h5><i class="fas fa-chart-pie"></i> This Month Summary</h5>
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Monthly Summary</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
+                    <div class="row text-center gx-3 mb-3">
                         <div class="col-4">
-                            <h4 class="text-success">{{ monthly_summary.present or 0 }}</h4>
+                            <h4>{{ monthly_summary.present or 0 }}</h4>
                             <small>Present</small>
                         </div>
                         <div class="col-4">
-                            <h4 class="text-info">{{ monthly_summary.wfh or 0 }}</h4>
+                            <h4>{{ monthly_summary.wfh or 0 }}</h4>
                             <small>WFH</small>
                         </div>
                         <div class="col-4">
-                            <h4 class="text-warning">{{ monthly_summary.leave or 0 }}</h4>
+                            <h4>{{ monthly_summary.leave or 0 }}</h4>
                             <small>Leave</small>
                         </div>
                     </div>
                     <hr>
-                    <div class="row text-center">
+                    <div class="row text-center gx-3">
                         <div class="col-4">
-                            <h5 class="text-success">{{ monthly_summary.approved or 0 }}</h5>
+                            <h5>{{ monthly_summary.approved or 0 }}</h5>
                             <small>Approved</small>
                         </div>
                         <div class="col-4">
-                            <h5 class="text-warning">{{ monthly_summary.pending or 0 }}</h5>
+                            <h5>{{ monthly_summary.pending or 0 }}</h5>
                             <small>Pending</small>
                         </div>
                         <div class="col-4">
-                            <h5 class="text-danger">{{ monthly_summary.rejected or 0 }}</h5>
+                            <h5>{{ monthly_summary.rejected or 0 }}</h5>
                             <small>Rejected</small>
                         </div>
                     </div>
@@ -106,31 +119,31 @@
 
     <!-- Quick Actions -->
     <div class="row mt-4">
-        <div class="col-md-12">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <a href="{{ url_for('vendor.calendar_view') }}" class="btn btn-outline-primary w-100 mb-2">
-                                <i class="fas fa-calendar"></i><br>View Calendar
+                    <div class="row gx-3">
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="{{ url_for('vendor.calendar_view') }}" class="btn btn-outline-primary w-100 d-flex flex-column align-items-center justify-content-center h-100">
+                                <i class="fas fa-calendar fa-2x mb-2"></i>View Calendar
                             </a>
                         </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-outline-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#futureLeaveModal">
-                                <i class="fas fa-plane"></i><br>Mark Future Leave
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('vendor.history') }}" class="btn btn-outline-info w-100 mb-2">
-                                <i class="fas fa-history"></i><br>View History
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="#" class="btn btn-outline-success w-100 d-flex flex-column align-items-center justify-content-center h-100" data-bs-toggle="modal" data-bs-target="#futureLeaveModal">
+                                <i class="fas fa-plane fa-2x mb-2"></i>Mark Future Leave
                             </a>
                         </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-outline-warning w-100 mb-2">
-                                <i class="fas fa-exclamation-triangle"></i><br>Mismatches ({{ stats.mismatch_count or 0 }})
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="{{ url_for('vendor.history') }}" class="btn btn-outline-info w-100 d-flex flex-column align-items-center justify-content-center h-100">
+                                <i class="fas fa-history fa-2x mb-2"></i>View History
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="{{ url_for('vendor.mismatches') }}" class="btn btn-outline-warning w-100 d-flex flex-column align-items-center justify-content-center h-100">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>Mismatches ({{ stats.mismatch_count or 0 }})
                             </a>
                         </div>
                     </div>
@@ -140,77 +153,77 @@
     </div>
 
     <!-- Attendance Modal -->
-    <div class="modal fade" id="attendanceModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Mark Attendance</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Date</label>
-                            <input type="date" name="date" class="form-control" required
-                                min="{{ allowed_range.start_date }}" max="{{ allowed_range.end_date }}"
-                                value="{{ today }}">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select" required>
-                                <option value="">Select Status</option>
-                                <option value="In office full day">In office full day</option>
-                                <option value="Office half + work from home half">Office half + work from home half</option>
-                                <option value="Office half + leave half">Office half + leave half</option>
-                                <option value="Work from home full">Work from home full</option>
-                                <option value="Leave">Leave</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Comments</label>
-                            <textarea name="comments" class="form-control" rows="3" placeholder="Optional comments..."></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Mark Attendance</button>
-                    </div>
-                </form>
+    <div class="modal fade" id="attendanceModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Mark Attendance</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="dateInput" class="form-label">Date</label>
+                <input id="dateInput" type="date" name="date" class="form-control" required min="{{ allowed_range.start_date }}" max="{{ allowed_range.end_date }}">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select" required>
+                  <option value="">Select</option>
+                  <option>In office full day</option>
+                  <option>Office half + work from home half</option>
+                  <option>Office half + leave half</option>
+                  <option>Work from home full</option>
+                  <option>Leave</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Comments</label>
+                <textarea name="comments" class="form-control" rows="3" placeholder="Optional comments"></textarea>
+              </div>
+              <div class="alert alert-info">
+                <small><i class="fas fa-info-circle"></i> Hours will be auto-calculated based on status.</small>
+              </div>
             </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
 
     <!-- Future Leave Modal -->
-    <div class="modal fade" id="futureLeaveModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Mark Future Leave</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Date</label>
-                            <input type="date" name="date" class="form-control" required min="{{ today }}">
-                        </div>
-
-                        <input type="hidden" name="status" value="Leave">
-
-                        <div class="mb-3">
-                            <label class="form-label">Reason</label>
-                            <textarea name="comments" class="form-control" rows="3" placeholder="Reason for leave..." required></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-warning">Mark Leave</button>
-                    </div>
-                </form>
+    <div class="modal fade" id="futureLeaveModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Mark Future Leave</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{{ url_for('vendor.mark_attendance') }}">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Date</label>
+                <input type="date" name="date" class="form-control" required min="{{ today }}">
+              </div>
+              <input type="hidden" name="status" value="Leave">
+              <div class="mb-3">
+                <label class="form-label">Reason</label>
+                <textarea name="comments" class="form-control" rows="3" required></textarea>
+              </div>
+              <div class="alert alert-warning">
+                <small><i class="fas fa-exclamation-triangle"></i> Leave will be recorded as zero hours.</small>
+              </div>
             </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-warning">Submit</button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
-</div>
+
 {% endblock %}

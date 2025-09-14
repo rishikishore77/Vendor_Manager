@@ -11,7 +11,7 @@
 
     <!-- Stats Cards -->
     <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card bg-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -27,7 +27,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -43,7 +43,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card bg-warning text-dark">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card bg-info text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -74,19 +74,96 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ timesheet_stats.generated_months if timesheet_stats else 0 }}</h4>
+                            <p>Generated Timesheets</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calculator fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ monthly_cycles.active_cycles if monthly_cycles else 0 }}</h4>
+                            <p>Active Cycles</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-sync fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timesheet Management Actions -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-gradient" style="background: linear-gradient(45deg, #28a745, #20c997);">
+                    <h5 class="text-white mb-0"><i class="fas fa-clock"></i> Timesheet Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-success h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calculator fa-3x text-success mb-3"></i>
+                                    <h5>Generate Monthly Timesheets</h5>
+                                    <p class="text-muted">Generate detailed timesheets with work hours, offsets, and mismatch calculations</p>
+                                    <div class="alert alert-warning alert-sm">
+                                        <small><i class="fas fa-lock"></i> This will lock the month for further uploads</small>
+                                    </div>
+                                    <a href="{{ url_for('admin.generate_timesheets') }}" class="btn btn-success">
+                                        <i class="fas fa-calculator"></i> Generate Timesheets
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-primary h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-eye fa-3x text-primary mb-3"></i>
+                                    <h5>View & Export Timesheets</h5>
+                                    <p class="text-muted">View generated timesheets, detailed work hours, offsets, and export to Excel</p>
+                                    <div class="mt-4">
+                                        <a href="{{ url_for('admin.vendor_timesheets') }}" class="btn btn-primary">
+                                            <i class="fas fa-file-excel"></i> View Timesheets
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Mismatch Management Actions -->
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-tasks"></i> Mismatch Management</h5>
+                <div class="card-header bg-gradient" style="background: linear-gradient(45deg, #ffc107, #fd7e14);">
+                    <h5 class="text-dark mb-0"><i class="fas fa-tasks"></i> Mismatch Management</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="card border-info">
+                            <div class="card border-info h-100">
                                 <div class="card-body text-center">
                                     <i class="fas fa-upload fa-3x text-info mb-3"></i>
                                     <h5>Upload Monthly Data</h5>
@@ -109,7 +186,7 @@
                         </div>
                         
                         <div class="col-md-4">
-                            <div class="card border-warning">
+                            <div class="card border-warning h-100">
                                 <div class="card-body text-center">
                                     <i class="fas fa-search fa-3x text-warning mb-3"></i>
                                     <h5>Process Mismatches</h5>
@@ -132,14 +209,16 @@
                         </div>
                         
                         <div class="col-md-4">
-                            <div class="card border-success">
+                            <div class="card border-success h-100">
                                 <div class="card-body text-center">
                                     <i class="fas fa-list fa-3x text-success mb-3"></i>
                                     <h5>View All Mismatches</h5>
-                                    <p>Monitor all site mismatches</p>
-                                    <a href="{{ url_for('admin.view_mismatches') }}" class="btn btn-success">
-                                        <i class="fas fa-eye"></i> View Mismatches
-                                    </a>
+                                    <p>Monitor all site mismatches and their status</p>
+                                    <div class="mt-4">
+                                        <a href="{{ url_for('admin.view_mismatches') }}" class="btn btn-success">
+                                            <i class="fas fa-eye"></i> View Mismatches
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -164,13 +243,23 @@
                             </a>
                         </div>
                         <div class="col-md-2">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-dark w-100 mb-2">
+                                <i class="fas fa-users-cog"></i><br>Manage Users
+                            </a>
+                        </div>
+                        <div class="col-md-2">
                             <a href="{{ url_for('admin.monthly_cycles') }}" class="btn btn-outline-info w-100 mb-2">
                                 <i class="fas fa-calendar-alt"></i><br>Monthly Cycles
                             </a>
                         </div>
                         <div class="col-md-2">
-                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-dark w-100 mb-2">
-                                <i class="fas fa-users-cog"></i><br>Manage Users
+                            <a href="{{ url_for('admin.vendor_timesheets') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-users"></i><br>Vendor Timesheets
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.holidays') }}" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="fas fa-calendar-check"></i><br>Holidays
                             </a>
                         </div>
                         <div class="col-md-2">
@@ -179,9 +268,99 @@
                             </a>
                         </div>
                         <div class="col-md-2">
-                            <a href="{{ url_for('admin.vendor_timesheets') }}" class="btn btn-outline-primary w-100 mb-2">
-                                <i class="fas fa-file-excel"></i><br>Vendor Timesheets
+                            <a href="{{ url_for('admin.audit_management') }}" class="btn btn-outline-danger w-100 mb-2">
+                                <i class="fas fa-shield-alt"></i><br>Audit
                             </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Month Overview -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-month"></i> Current Month Status</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_month_cycle %}
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h6 class="text-muted">Upload Status</h6>
+                                <div class="mt-2">
+                                    <span class="badge bg-{{ 'success' if current_month_cycle.swipe_uploaded else 'secondary' }} mb-1">
+                                        Swipe {{ 'Uploaded' if current_month_cycle.swipe_uploaded else 'Pending' }}
+                                    </span><br>
+                                    <span class="badge bg-{{ 'success' if current_month_cycle.wfh_uploaded else 'secondary' }} mb-1">
+                                        WFH {{ 'Uploaded' if current_month_cycle.wfh_uploaded else 'Pending' }}
+                                    </span><br>
+                                    <span class="badge bg-{{ 'success' if current_month_cycle.leave_uploaded else 'secondary' }}">
+                                        Leave {{ 'Uploaded' if current_month_cycle.leave_uploaded else 'Pending' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h6 class="text-muted">Processing</h6>
+                                <div class="mt-2">
+                                    <span class="badge bg-{{ 'success' if current_month_cycle.mismatch_processed else 'warning' }} mb-2">
+                                        Mismatch {{ 'Processed' if current_month_cycle.mismatch_processed else 'Pending' }}
+                                    </span><br>
+                                    <span class="badge bg-{{ 'success' if current_month_cycle.timesheet_generated else 'secondary' }}">
+                                        Timesheet {{ 'Generated' if current_month_cycle.timesheet_generated else 'Not Generated' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <h6 class="text-muted">Actions</h6>
+                            <div class="mt-2">
+                                {% if not current_month_cycle.timesheet_generated %}
+                                <a href="{{ url_for('admin.generate_timesheets') }}" class="btn btn-sm btn-success mb-1">
+                                    Generate Timesheet
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('admin.vendor_timesheets', month_year=current_month_cycle.month_year) }}" class="btn btn-sm btn-primary">
+                                    View Timesheets
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No active cycle for current month</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line"></i> Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h4 class="text-primary">{{ quick_stats.this_month_attendance if quick_stats else 0 }}</h4>
+                                <small class="text-muted">This Month<br>Attendance</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h4 class="text-warning">{{ quick_stats.pending_approvals if quick_stats else 0 }}</h4>
+                                <small class="text-muted">Pending<br>Approvals</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ quick_stats.resolved_mismatches if quick_stats else 0 }}</h4>
+                            <small class="text-muted">Resolved<br>Mismatches</small>
                         </div>
                     </div>
                 </div>
@@ -200,22 +379,36 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
                                 <tr>
                                     <th>Date</th>
                                     <th>Employee</th>
                                     <th>Type</th>
                                     <th>Status</th>
                                     <th>Deadline</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for mismatch in recent_mismatches[:10] %}
                                 <tr>
-                                    <td>{{ mismatch.date }}</td>
-                                    <td>{{ mismatch.user_info.name if mismatch.user_info else 'N/A' }}</td>
-                                    <td>{{ mismatch.mismatch_type|replace('_', ' ')|title }}</td>
+                                    <td>
+                                        <strong>{{ mismatch.date }}</strong>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ mismatch.user_info.name if mismatch.user_info else 'N/A' }}</strong>
+                                            {% if mismatch.user_info and mismatch.user_info.employee_code %}
+                                            <br><small class="text-muted">{{ mismatch.user_info.employee_code }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ mismatch.mismatch_type|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
                                     <td>
                                         <span class="badge bg-{% if mismatch.status == 'pending' %}danger{% elif mismatch.status == 'vendor_updated' %}warning{% elif mismatch.status == 'manager_approved' %}success{% else %}secondary{% endif %}">
                                             {{ mismatch.status|replace('_', ' ')|title }}
@@ -223,10 +416,15 @@
                                     </td>
                                     <td>
                                         {% if mismatch.deadline %}
-                                        <small class="{% if mismatch.deadline < now() %}text-danger{% elif (mismatch.deadline - now()).days < 2 %}text-warning{% endif %}">
+                                        <small class="{% if mismatch.deadline < now() %}text-danger fw-bold{% elif (mismatch.deadline - now()).days < 2 %}text-warning fw-bold{% else %}text-muted{% endif %}">
                                             {{ mismatch.deadline.strftime('%m-%d %H:%M') }}
                                         </small>
                                         {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('admin.view_mismatches') }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -238,5 +436,75 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Recent Activity Log (Optional) -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Recent System Activity</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activities %}
+                    <div class="timeline">
+                        {% for activity in recent_activities[:5] %}
+                        <div class="d-flex mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="bg-{{ activity.type_color or 'primary' }} rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-{{ activity.icon or 'info' }} text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-bold">{{ activity.title }}</div>
+                                <div class="text-muted small">{{ activity.description }}</div>
+                                <div class="text-muted small">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') if activity.timestamp else '' }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent activities to display</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+/* Custom gradient backgrounds */
+.bg-gradient {
+    background: linear-gradient(45deg, #007bff, #6610f2) !important;
+}
+
+/* Timeline styles */
+.timeline .bg-primary { background-color: #007bff !important; }
+.timeline .bg-success { background-color: #28a745 !important; }
+.timeline .bg-warning { background-color: #ffc107 !important; }
+.timeline .bg-danger { background-color: #dc3545 !important; }
+
+/* Card hover effects */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Badge animations */
+.badge {
+    transition: all 0.3s ease;
+}
+
+/* Button hover effects */
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-warning:hover,
+.btn-outline-info:hover,
+.btn-outline-danger:hover,
+.btn-outline-secondary:hover,
+.btn-outline-dark:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease-in-out;
+}
+</style>
 {% endblock %}

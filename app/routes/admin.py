@@ -37,6 +37,108 @@ def get_year_calendar(year):
         months[month] = weeks
     return months
 
+
+def export_individual_vendor_timesheet(vendor_id, month_year, vendors):
+    """Export detailed timesheet for individual vendor"""
+    from app.models.timesheet import Timesheet
+    from io import BytesIO
+    import pandas as pd
+    
+    # Find vendor info
+    vendor = None
+    for v in vendors:
+        if str(v['_id']) == vendor_id:
+            vendor = v
+            break
+    
+    if not vendor:
+        flash('Vendor not found', 'error')
+        return redirect(url_for('admin.vendor_timesheets'))
+    
+    # Get timesheet for this vendor and month
+    timesheet = Timesheet.find_one(vendor_id, month_year)
+    
+    if not timesheet:
+        flash('No timesheet found for this vendor and month', 'error')
+        return redirect(url_for('admin.vendor_timesheets'))
+    
+    # Prepare export data
+    export_data = []
+    base_info = {
+        'Vendor Name': vendor.get('name', 'N/A'),
+        'Vendor Email': vendor.get('email', 'N/A'),
+        'Employee Code': vendor.get('employee_code', 'N/A'),
+        'Month-Year': timesheet.get('month_year', 'N/A'),
+        'Mismatch Leave Days': timesheet.get('mismatch_leave_days', 0),
+        'Total Work Hours': timesheet.get('total_work_hours', 0),
+        'Total Offset Hours': timesheet.get('total_offset_hours', 0),
+        'Total Hours (with offset)': timesheet.get('total_hours_with_offset', 0)
+    }
+    
+    # Add work dates
+    work_dates = timesheet.get('work_dates_hours', {})
+    for date, hours in work_dates.items():
+        row = base_info.copy()
+        row.update({
+            'Date': date,
+            'Hours Worked': hours,
+            'Type': 'Work'
+        })
+        export_data.append(row)
+    
+    # Add offset dates
+    offset_dates = timesheet.get('offset_dates_hours', {})
+    for date, hours in offset_dates.items():
+        row = base_info.copy()
+        row.update({
+            'Date': date,
+            'Hours Worked': hours,
+            'Type': 'Offset'
+        })
+        export_data.append(row)
+    
+    # If no detailed dates, add summary row
+    if not work_dates and not offset_dates:
+        export_data.append(base_info)
+    
+    # Create Excel file
+    df = pd.DataFrame(export_data)
+    output = BytesIO()
+    
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Timesheet Details')
+        
+        # Add summary sheet
+        summary_data = [{
+            'Vendor Name': base_info['Vendor Name'],
+            'Month-Year': base_info['Month-Year'],
+            'Total Work Hours': base_info['Total Work Hours'],
+            'Total Offset Hours': base_info['Total Offset Hours'],
+            'Mismatch Leave Days': base_info['Mismatch Leave Days'],
+            'Total Hours (with offset)': base_info['Total Hours (with offset)']
+        }]
+        summary_df = pd.DataFrame(summary_data)
+        summary_df.to_excel(writer, index=False, sheet_name='Summary')
+    
+    output.seek(0)
+    
+    # Create filename
+    vendor_name = vendor.get('name', 'Unknown').replace(' ', '_')
+    filename = f"{vendor_name}_Timesheet_{month_year}.xlsx"
+    
+    return send_file(output, 
+                     download_name=filename,
+                     as_attachment=True,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+def get_recent_months(num=12):
+    today = date.today()
+    months = []
+    for i in range(num):
+        m = today - relativedelta(months=i)
+        months.append(m.strftime("%Y-%m"))
+    return months
+
 @admin_bp.route('/dashboard')
 @login_required
 @role_required('admin')
@@ -499,45 +601,139 @@ def vendor_timesheets():
     from app.models.timesheet import Timesheet
     from app.models.user import User
     from app.models.vending_company import VendingCompany
+    from io import BytesIO
+    import pandas as pd
 
     site_id = session['site_id']
-    vending_company_id = request.args.get('vending_company_id')
-    month_year = request.args.get('month_year')
-
-    filters = {
-        'vending_company_id': vending_company_id,
-        'month_year': month_year,
-    }
     
-    timesheets = Timesheet.get_timesheets(filters)
+    # Get filters from request
+    month_year = request.args.get('month_year', '').strip()
+    vending_company_id = request.args.get('vending_company_id', '').strip()
+    employee_name = request.args.get('employee_name', '').strip()
+    export_vendor_id = request.args.get('export_vendor_id', '').strip()
     
-    vendor_ids = [ts['vendor_id'] for ts in timesheets]
-    vendors = User.find({'_id': {'$in': vendor_ids}})
+    # Build vendor query based on filters
+    vendor_query = {'site_id': site_id, 'role': 'vendor'}
+    
+    if vending_company_id:
+        vendor_query['vendor_company_id'] = ObjectId(vending_company_id)
+    
+    if employee_name:
+        vendor_query['name'] = {'$regex': employee_name, '$options': 'i'}
+    
+    # Get vendors based on filters
+    vendors = list(User.find(vendor_query))
+    vendor_ids = [v['_id'] for v in vendors]
+    
+    # Handle individual vendor export
+    if export_vendor_id and month_year:
+        return export_individual_vendor_timesheet(export_vendor_id, month_year, vendors)
+    
+    # Build timesheet query
+    timesheet_query = {}
+    if month_year:
+        timesheet_query['month_year'] = month_year
+    if vendor_ids:
+        timesheet_query['vendor_id'] = {'$in': vendor_ids}
+    
+    # Get timesheets
+    timesheets = list(Database.find(Timesheet.COLLECTION, timesheet_query, sort=[('month_year', -1)]))
+    
+    # Enrich timesheets with vendor and company info
     vendor_map = {v['_id']: v for v in vendors}
+    vending_companies_map = {}
     
-    data_for_export = []
     for ts in timesheets:
         vendor = vendor_map.get(ts['vendor_id'])
-        data_for_export.append({
-            'Vendor Name': vendor.get('name') if vendor else '',
-            'Month-Year': ts['month_year'],
-            'Worked Days': ts['worked_days'],
-            'Mismatch Leave Days': ts['mismatch_leave_days'],
-            'Offset Days': ts['offset_days'],
-            'Total Days (with offset)': ts['worked_days'] + ts['offset_days']
-        })
-
-    if 'export' in request.args:
-        df = pd.DataFrame(data_for_export)
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Timesheets')
-        output.seek(0)
-        return send_file(output, attachment_filename='vendor_timesheets.xlsx', as_attachment=True)
-
+        if vendor:
+            ts['vendor_name'] = vendor.get('name', 'N/A')
+            ts['vendor_email'] = vendor.get('email', 'N/A')
+            ts['work_dates'] = ts.get('work_dates_hours', {})
+            ts['offset_dates'] = ts.get('offset_dates_hours', {})
+            
+            # Get vending company info
+            if vendor.get('vendor_company_id'):
+                if vendor['vendor_company_id'] not in vending_companies_map:
+                    company = company = VendingCompany.find_by_id(vendor['vendor_company_id'])
+                    vending_companies_map[vendor['vendor_company_id']] = company
+                
+                company = vending_companies_map.get(vendor['vendor_company_id'])
+                ts['vending_company_name'] = company.get('name', 'N/A') if company else 'N/A'
+            else:
+                ts['vending_company_name'] = 'N/A'
+        else:
+            ts['vendor_name'] = 'N/A'
+            ts['vendor_email'] = 'N/A'
+            ts['vending_company_name'] = 'N/A'
+    
+    # Get all vending companies for filter dropdown
     vending_companies = VendingCompany.get_all(site_id)
     
-    return render_template('admin/vendor_timesheets.html',
-                           timesheets=data_for_export,
+    # Prepare filters for template
+    filters = {
+        'month_year': month_year,
+        'vending_company_id': vending_company_id,
+        'employee_name': employee_name
+    }
+    
+    return render_template('admin/vendor_timesheets_detailed.html',
+                           timesheets=timesheets,
+                           vending_companies=vending_companies,
+                           filters=filters)
+
+@admin_bp.route('/generate-timesheets', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def generate_timesheets():
+    site_id = session['site_id']
+    months = MonthlyCycle.get_available_months(site_id)
+    vending_companies = VendingCompany.get_all(site_id)
+    managers = User.find({'site_id': site_id, 'role': 'manager'})
+
+    filters = {
+        'month_year': request.args.get('month_year', ''),
+        'vending_company_id': request.args.get('vending_company_id', ''),
+        'manager_id': request.args.get('manager_id', '')
+    }
+
+    if request.method == 'POST':
+        month_year = request.form.get('month_year')
+        manager_id = request.form.get('manager_id') or None
+        vending_company_id = request.form.get('vending_company_id') or None
+
+        if not month_year:
+            flash('Please select a month', 'error')
+            return redirect(url_for('admin.generate_timesheets'))
+
+        # Check if timesheet already generated
+        if MonthlyCycle.is_timesheet_generated(site_id, month_year):
+            flash('Timesheet already generated for this month.', 'warning')
+            #return redirect(url_for('admin.vendor_timesheets', month_year=month_year))
+
+        # Check upload statuses
+        cycle = MonthlyCycle.get_by_month(site_id, month_year)
+        if cycle:
+            upload_status = cycle.get('data_upload_status', {})
+            leave_uploaded = upload_status.get('leave_data', {}).get('uploaded', False)
+            swipe_uploaded = upload_status.get('swipe_data', {}).get('uploaded', False)
+            wfh_uploaded = upload_status.get('wfh_data', {}).get('uploaded', False)
+
+            if not all([leave_uploaded, swipe_uploaded, wfh_uploaded]):
+                flash('All data types (leave, swipe, WFH) must be uploaded before generating timesheets.', 'error')
+                return redirect(url_for('admin.generate_timesheets'))
+
+        # Lock month for timesheet generation
+        MonthlyCycle.lock_month_for_timesheet(site_id, month_year)
+
+        # Generate timesheets
+        from app.utils.timesheet_utils import generate_timesheets_for_month
+        generate_timesheets_for_month(site_id, manager_id, month_year, vending_company_id)
+
+        flash(f'Timesheets generated successfully for {month_year}. Month is now locked for further uploads.', 'success')
+        return redirect(url_for('admin.vendor_timesheets', month_year=month_year))
+
+    return render_template('admin/generate_timesheets.html',
+                           months=months,
+                           managers=managers,
                            vending_companies=vending_companies,
                            filters=filters)

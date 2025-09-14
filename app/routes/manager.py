@@ -404,3 +404,70 @@ def monthly_summary_report():
                                'department': department_filter,
                                'month_year': month_year
                            })
+
+@manager_bp.route('/vendor-timesheets')
+@login_required
+@role_required('manager')
+def vendor_timesheets():
+    from bson import ObjectId
+    from app.models.timesheet import Timesheet
+    from app.models.user import User
+    from app.models.vending_company import VendingCompany
+    from flask import send_file
+    import io
+    import pandas as pd
+
+    manager_id = session['user_id']
+    site_id = session['site_id']
+
+    # Filters
+    vendor_name_filter = request.args.get('vendor_name', '').strip()
+    vending_company_filter = request.args.get('vending_company', '').strip()
+    month_year_filter = request.args.get('month_year', '').strip()
+
+    # Fetch vendors under this manager
+    vendors = User.get_vendors_by_manager(manager_id)
+
+    # Filter vendors by name/company
+    if vendor_name_filter:
+        vendors = [v for v in vendors if vendor_name_filter.lower() in v.get('name', '').lower()]
+    if vending_company_filter:
+        vendors = [v for v in vendors if (str(v.get('vendor_company_id') or '') == vending_company_filter)]
+
+    vendor_ids = [v['_id'] for v in vendors]
+
+    # Prepare filters for timesheets
+    filters = {}
+    if vendor_ids:
+        filters['vendor_id'] = {'$in': vendor_ids}
+    if month_year_filter:
+        filters['month_year'] = month_year_filter
+
+    # Check if export requested
+    if 'export' in request.args:
+        timesheet_data = Timesheet.get_export_data(filters)
+        df = pd.DataFrame(timesheet_data)
+
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='VendorTimesheets')
+        output.seek(0)
+
+        filename = f'vendor_timesheets_{month_year_filter or "all"}.xlsx'
+        return send_file(output, as_attachment=True, download_name=filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    # Fetch timesheet data
+    timesheets = Timesheet.get_timesheets(filters)
+
+    # Get all vending companies for filter dropdown
+    vending_companies = VendingCompany.get_all(site_id)
+
+    return render_template('manager/vendor_timesheets.html',
+                           timesheets=timesheets,
+                           vendors=vendors,
+                           vending_companies=vending_companies,
+                           filters={'vendor_name': vendor_name_filter,
+                                    'vending_company': vending_company_filter,
+                                    'month_year': month_year_filter})
+
+

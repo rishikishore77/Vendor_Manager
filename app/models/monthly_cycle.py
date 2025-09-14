@@ -31,8 +31,11 @@ class MonthlyCycle:
             "data_upload_status": {
                 "swipe_data": {"uploaded": False, "uploaded_at": None},
                 "wfh_data": {"uploaded": False, "uploaded_at": None},
-                "leave_data": {"uploaded": False, "uploaded_at": None}
+                "leave_data": {"uploaded": False, "uploaded_at": None},
+                "mismatch_data": {"processed": False, "processed_at": None}
             },
+            "timesheet_status": "not_generated",
+            "uploads_locked": False,
             "mismatch_deadline": deadline,
             "workdays_calculated": False,
             "created_at": datetime.utcnow()
@@ -57,6 +60,10 @@ class MonthlyCycle:
         )
 
     @classmethod
+    def find_one_by_month(cls, site_id, month_year):
+        return cls.get_by_month(site_id, month_year)
+
+    @classmethod
     def update_upload_status(cls, site_id, month_year, data_type):
         """Update upload status for a data type"""
         update_data = {
@@ -68,6 +75,58 @@ class MonthlyCycle:
             {"site_id": ObjectId(site_id), "month_year": month_year},
             {"$set": update_data}
         )
+
+    @classmethod
+    def update_mismatch_processed(cls, site_id, month_year):
+        """Mark mismatch as processed for given site and month"""
+        update_data = {
+            "data_upload_status.mismatch_data.processed": True,
+            "data_upload_status.mismatch_data.processed_at": datetime.utcnow()
+        }
+        return Database.update_one(
+            cls.COLLECTION,
+            {"site_id": ObjectId(site_id), "month_year": month_year},
+            {"$set": update_data}
+        )
+
+    @classmethod
+    def lock_month_for_timesheet(cls, site_id, month_year):
+        """Lock month for timesheet generation"""
+        query = {"site_id": ObjectId(site_id), "month_year": month_year}
+        update_data = {
+            "timesheet_status": "generated",
+            "timesheet_generated_on": datetime.utcnow(),
+            "uploads_locked": True
+        }
+        
+        cycle = cls.find_one_by_month(site_id, month_year)
+        if cycle:
+            return Database.update_one(cls.COLLECTION, query, {"$set": update_data})
+        else:
+            # Create new cycle if doesn't exist
+            data = {
+                "site_id": ObjectId(site_id),
+                "month_year": month_year,
+                "timesheet_status": "generated",
+                "timesheet_generated_on": datetime.utcnow(),
+                "uploads_locked": True,
+                "data_upload_status": {
+                    "mismatch_data": {"processed": True, "processed_at": datetime.utcnow()}
+                }
+            }
+            return Database.insert_one(cls.COLLECTION, data)
+
+    @classmethod
+    def is_timesheet_generated(cls, site_id, month_year):
+        """Check if timesheet is generated for a month"""
+        cycle = cls.find_one_by_month(site_id, month_year)
+        return cycle and cycle.get('timesheet_status') == 'generated'
+
+    @classmethod
+    def get_available_months(cls, site_id):
+        """Get available months for site"""
+        cycles = list(Database.find(cls.COLLECTION, {"site_id": ObjectId(site_id)}))
+        return [cycle['month_year'] for cycle in cycles]
 
     @classmethod
     def update_status(cls, site_id, month_year, status):

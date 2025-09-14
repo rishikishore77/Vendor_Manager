@@ -54,6 +54,7 @@ class MismatchProcessor:
                     pass
                 elif existing_mismatch:
                     # Update existing mismatch
+                    mismatch['status'] = 'pending'
                     MismatchManagement.update_one(
                         {'_id': existing_mismatch['_id']},
                         {'$set': mismatch}
